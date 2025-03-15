@@ -56,7 +56,7 @@ public class NotificationHelper {
             messageTextView.setText(message);
             
             // 创建对话框
-            AlertDialog.Builder builder = new AlertDialog.Builder(context)
+            AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.RoundedCornerDialog)
                     .setView(notificationView)
                     .setCancelable(true);
             

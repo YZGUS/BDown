@@ -191,8 +191,8 @@ public class BilibiliSearchFragment extends Fragment {
         View view = getView();
         String title = bTvPart.getTitle();
         
-        // 创建下载进度对话框
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        // 创建下载进度对话框，使用圆角样式
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), R.style.RoundedCornerDialog);
         View progressView = LayoutInflater.from(requireContext()).inflate(R.layout.download_progress_dialog, null);
         
         // 初始化进度对话框控件
@@ -272,9 +272,7 @@ public class BilibiliSearchFragment extends Fragment {
             // 这里可以添加取消下载的逻辑
         });
         
-        // 开始下载
-        Snackbar.make(view, title + " 开始下载 !!!", LENGTH_SHORT).show();
-        
+        // 开始下载，移除多余的Snackbar提示
         CompletableFuture
                 .supplyAsync(() -> bilibiliTvApi.download(bTvPart, downloadCallback))
                 .thenAccept(result -> {
@@ -291,16 +289,8 @@ public class BilibiliSearchFragment extends Fragment {
                             // 关闭进度对话框
                             progressDialog.dismiss();
                             
-                            // 显示下载完成通知
+                            // 只使用一种通知方式，减少冗余
                             NotificationHelper.showDownloadCompleteNotification(
-                                getContext(),
-                                "下载完成",
-                                "文件 " + fileName + " 已保存至下载目录",
-                                downloadedFile
-                            );
-                            
-                            // 同时发送系统通知
-                            SystemNotificationHelper.sendDownloadCompleteNotification(
                                 getContext(),
                                 "下载完成",
                                 "文件 " + fileName + " 已保存至下载目录",

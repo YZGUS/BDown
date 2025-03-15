@@ -27,11 +27,28 @@ public class NotificationUtils {
     private static AlertDialog currentDialog = null;
 
     /**
+     * 显示下载完成通知（接受文件路径）
+     *
+     * @param context  上下文
+     * @param title    通知标题
+     * @param message  通知消息
+     * @param filePath 下载的文件路径
+     */
+    public static void showDownloadCompleteNotification(Context context, String title, String message, String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            showDownloadCompleteNotification(context, title, message, (File) null);
+            return;
+        }
+
+        showDownloadCompleteNotification(context, title, message, new File(filePath));
+    }
+
+    /**
      * 显示下载完成通知
      *
-     * @param context     上下文
-     * @param title       通知标题
-     * @param message     通知消息
+     * @param context        上下文
+     * @param title          通知标题
+     * @param message        通知消息
      * @param downloadedFile 下载的文件
      */
     public static void showDownloadCompleteNotification(Context context, String title, String message, File downloadedFile) {
@@ -45,23 +62,23 @@ public class NotificationUtils {
             dismissCurrentDialog();
 
             View notificationView = LayoutInflater.from(context).inflate(R.layout.download_notification, null);
-            
+
             // 设置标题和消息
             TextView titleTextView = notificationView.findViewById(R.id.notification_title);
             TextView messageTextView = notificationView.findViewById(R.id.notification_message);
             Button openButton = notificationView.findViewById(R.id.notification_open);
             Button dismissButton = notificationView.findViewById(R.id.notification_dismiss);
-            
+
             titleTextView.setText(title);
             messageTextView.setText(message);
-            
+
             // 创建对话框
             AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.RoundedCornerDialog)
                     .setView(notificationView)
                     .setCancelable(true);
-            
+
             currentDialog = builder.create();
-            
+
             // 设置按钮点击事件
             openButton.setOnClickListener(v -> {
                 if (downloadedFile != null && downloadedFile.exists()) {
@@ -69,9 +86,9 @@ public class NotificationUtils {
                 }
                 dismissCurrentDialog();
             });
-            
+
             dismissButton.setOnClickListener(v -> dismissCurrentDialog());
-            
+
             // 显示对话框
             currentDialog.show();
         });
@@ -94,13 +111,13 @@ public class NotificationUtils {
         try {
             String authority = context.getPackageName() + ".fileprovider";
             Uri fileUri = FileProvider.getUriForFile(context, authority, file);
-            
+
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            
+
             // 根据文件类型设置MIME类型
             String mimeType;
             String fileName = file.getName().toLowerCase();
-            
+
             if (fileName.endsWith(".mp4") || fileName.endsWith(".m4v")) {
                 mimeType = "video/mp4";
             } else if (fileName.endsWith(".mp3") || fileName.endsWith(".aac") || fileName.endsWith(".flac")) {
@@ -108,10 +125,10 @@ public class NotificationUtils {
             } else {
                 mimeType = "*/*";
             }
-            
+
             intent.setDataAndType(fileUri, mimeType);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            
+
             context.startActivity(intent);
         } catch (Exception e) {
             e.printStackTrace();

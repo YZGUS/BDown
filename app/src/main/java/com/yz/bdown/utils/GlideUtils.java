@@ -13,16 +13,22 @@ import com.bumptech.glide.request.RequestOptions;
 import com.yz.bdown.R;
 
 /**
- * Glide图片加载工具类，专门处理B站图片加载
+ * Glide图片加载工具类
+ * 专门处理B站图片加载，添加必要的请求头和URL修复
  */
 public class GlideUtils {
-    private static final String TAG = "GlideHelper";
+    private static final String TAG = "GlideUtils";
 
     /**
      * 加载B站图片
+     *
+     * @param context   上下文
+     * @param url       图片URL
+     * @param imageView 要加载到的ImageView
      */
     public static void loadBilibiliImage(Context context, String url, ImageView imageView) {
         if (context == null || url == null || url.isEmpty() || imageView == null) {
+            Log.w(TAG, "参数无效，无法加载图片");
             return;
         }
 
@@ -52,6 +58,10 @@ public class GlideUtils {
 
     /**
      * 修复B站图片URL
+     * 处理协议、域名等问题，确保URL可以正常访问
+     *
+     * @param url 原始URL
+     * @return 修复后的URL
      */
     private static String fixBilibiliImageUrl(String url) {
         if (url == null || url.isEmpty()) {

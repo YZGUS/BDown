@@ -20,7 +20,7 @@ public class FileItem {
         this.previewUri = previewUri;
     }
 
-    public FileItem(String fileName, String fileSize, String fileType, String previewUri, 
+    public FileItem(String fileName, String fileSize, String fileType, String previewUri,
                     long fileSizeBytes, long lastModifiedTimestamp) {
         this.fileName = fileName;
         this.fileSize = fileSize;
@@ -28,7 +28,7 @@ public class FileItem {
         this.previewUri = previewUri;
         this.fileSizeBytes = fileSizeBytes;
         this.lastModifiedTimestamp = lastModifiedTimestamp;
-        
+
         // 格式化日期 - 只显示年月日
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         this.lastModified = sdf.format(new Date(lastModifiedTimestamp));
@@ -49,15 +49,15 @@ public class FileItem {
     public String getPreviewUri() {
         return previewUri;
     }
-    
+
     public long getFileSizeBytes() {
         return fileSizeBytes;
     }
-    
+
     public long getLastModifiedTimestamp() {
         return lastModifiedTimestamp;
     }
-    
+
     public String getLastModified() {
         return lastModified;
     }

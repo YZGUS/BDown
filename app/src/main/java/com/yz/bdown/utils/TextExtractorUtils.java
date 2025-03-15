@@ -18,21 +18,43 @@ public class TextExtractorUtils {
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     /**
-     * 文本提取进度回调接口
+     * 文本提取回调接口（简化版）
      */
-    public interface ExtractionProgressCallback {
+    public interface ExtractionCallback {
         void onProgress(int progress);
+
         void onComplete(String text);
+
         void onError(String errorMessage);
     }
 
     /**
-     * 从视频文件中提取文本
-     * @param context 上下文
+     * 文本提取进度回调接口（完整版）
+     *
+     * @deprecated 使用简化的 {@link ExtractionCallback} 代替
+     */
+    @Deprecated
+    public interface ExtractionProgressCallback extends ExtractionCallback {
+    }
+
+    /**
+     * 从视频文件中提取文本（简化版，不需要Context）
+     *
      * @param filePath 视频文件路径
      * @param callback 提取进度回调
      */
-    public static void extractTextFromVideo(Context context, String filePath, ExtractionProgressCallback callback) {
+    public static void extractTextFromVideo(String filePath, ExtractionCallback callback) {
+        extractTextFromVideo(null, filePath, callback);
+    }
+
+    /**
+     * 从视频文件中提取文本
+     *
+     * @param context  上下文（可为null）
+     * @param filePath 视频文件路径
+     * @param callback 提取进度回调
+     */
+    public static void extractTextFromVideo(Context context, String filePath, ExtractionCallback callback) {
         executorService.execute(() -> {
             try {
                 // 模拟提取进度
@@ -45,7 +67,7 @@ public class TextExtractorUtils {
                 // 这里是真实的文本提取逻辑
                 // 目前是模拟的，实际应用中需要调用相关API或使用第三方库进行语音识别
                 String extractedText = "这是从视频中提取的示例文本。在实际应用中，这里应当是使用语音识别技术从视频音轨中提取的真实内容。";
-                
+
                 // 回调完成结果
                 mainHandler.post(() -> callback.onComplete(extractedText));
             } catch (Exception e) {
@@ -56,12 +78,23 @@ public class TextExtractorUtils {
     }
 
     /**
-     * 从音频文件中提取文本
-     * @param context 上下文
+     * 从音频文件中提取文本（简化版，不需要Context）
+     *
      * @param filePath 音频文件路径
      * @param callback 提取进度回调
      */
-    public static void extractTextFromAudio(Context context, String filePath, ExtractionProgressCallback callback) {
+    public static void extractTextFromAudio(String filePath, ExtractionCallback callback) {
+        extractTextFromAudio(null, filePath, callback);
+    }
+
+    /**
+     * 从音频文件中提取文本
+     *
+     * @param context  上下文（可为null）
+     * @param filePath 音频文件路径
+     * @param callback 提取进度回调
+     */
+    public static void extractTextFromAudio(Context context, String filePath, ExtractionCallback callback) {
         executorService.execute(() -> {
             try {
                 // 模拟提取进度
@@ -74,7 +107,7 @@ public class TextExtractorUtils {
                 // 这里是真实的文本提取逻辑
                 // 目前是模拟的，实际应用中需要调用相关API或使用第三方库进行语音识别
                 String extractedText = "这是从音频中提取的示例文本。在实际应用中，这里应当是使用语音识别技术从音频文件中提取的真实内容。";
-                
+
                 // 回调完成结果
                 mainHandler.post(() -> callback.onComplete(extractedText));
             } catch (Exception e) {

@@ -35,4 +35,8 @@
     <!-- 提取按钮颜色 -->
     <color name="extraction_button_blue">#2196F3</color>
     <color name="extraction_button_purple">#9C27B0</color>
+    
+    <color name="colorPrimary">#2196F3</color>
+    <color name="colorPrimaryDark">#1976D2</color>
+    <color name="colorAccent">#FF4081</color>
 </resources>

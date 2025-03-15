@@ -15,19 +15,30 @@ import com.yz.bdown.fragment.bilibili.BilibiliFolderFragment;
 import com.yz.bdown.fragment.bilibili.BilibiliFragment;
 import com.yz.bdown.utils.SystemNotificationUtils;
 
+/**
+ * 应用主Activity
+ * 负责管理Fragment的切换和应用的主界面
+ */
 public class MainActivity extends AppCompatActivity {
 
-    final FragmentManager fragmentManager = getSupportFragmentManager();
-
+    private final FragmentManager fragmentManager = getSupportFragmentManager();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // 初始化应用
+        initializeApp();
+    }
+
+    /**
+     * 初始化应用
+     */
+    private void initializeApp() {
         // 创建通知渠道
         SystemNotificationUtils.createNotificationChannel(this);
-        
+
         // 设置 toolbar
         setSupportActionBar(findViewById(R.id.toolbar));
 
@@ -35,7 +46,11 @@ public class MainActivity extends AppCompatActivity {
         loadFragment(new BilibiliFragment());
     }
 
-    // 加载 Fragment
+    /**
+     * 加载Fragment到容器
+     *
+     * @param fragment 要加载的Fragment实例
+     */
     private void loadFragment(Fragment fragment) {
         fragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, fragment)
@@ -55,17 +70,31 @@ public class MainActivity extends AppCompatActivity {
         if (itemId == R.id.item_bilibili) {
             loadFragment(new BilibiliFragment());
         } else {
-            View rootView = findViewById(android.R.id.content);  // 使用当前根布局作为的父视图
-            Snackbar.make(rootView, "o_o ???", Snackbar.LENGTH_SHORT).show();
+            // 显示提示信息
+            showNotImplementedMessage();
         }
         return true;
+    }
+
+    /**
+     * 显示功能未实现的提示信息
+     */
+    private void showNotImplementedMessage() {
+        View rootView = findViewById(android.R.id.content);
+        Snackbar.make(rootView, "o_o ???", Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         // 释放所有播放器
-        FragmentManager fragmentManager = getSupportFragmentManager();
+        releaseResources();
+    }
+
+    /**
+     * 释放应用资源
+     */
+    private void releaseResources() {
         Fragment fragment = fragmentManager.findFragmentById(R.id.fragment_container);
         if (fragment instanceof BilibiliFolderFragment) {
             ((BilibiliFolderFragment) fragment).releasePlayer();

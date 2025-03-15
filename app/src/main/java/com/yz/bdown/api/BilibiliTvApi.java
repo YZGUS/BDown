@@ -101,7 +101,7 @@ public class BilibiliTvApi {
         JSONObject firstPart = (JSONObject) parts.get(0);
         // 视频标题（如果有多P，使用第一个分P标题作为主标题）
         String mainTitle = firstPart.getString("part");
-        
+
         List<BilibiliTvPart> BilibiliTvParts = new ArrayList<>(parts.size());
         for (Object part : parts) {
             JSONObject partJson = (JSONObject) part;
@@ -110,7 +110,7 @@ public class BilibiliTvApi {
             Long cid = partJson.getLong("cid");
             BilibiliTvParts.add(new BilibiliTvPart(bvid, cid, title, duration));
         }
-        
+
         // 如果只有一个分P，使用其标题作为视频标题
         // 如果有多个分P，生成一个总标题
         String videoTitle;
@@ -119,7 +119,7 @@ public class BilibiliTvApi {
         } else {
             videoTitle = mainTitle;
         }
-        
+
         return new BilibiliTvInfo(cover, videoTitle, BilibiliTvParts);
     }
 
@@ -197,8 +197,8 @@ public class BilibiliTvApi {
             };
 
             // 下载视频和音频
-            if (!downloadM4sFile(urlPair.getKey(), videoFile, videoCallback) || 
-                !downloadM4sFile(urlPair.getValue(), audioFile, audioCallback)) {
+            if (!downloadM4sFile(urlPair.getKey(), videoFile, videoCallback) ||
+                    !downloadM4sFile(urlPair.getValue(), audioFile, audioCallback)) {
                 Log.w(TAG, "download m4s failed, BilibiliTvPart=" + BilibiliTvPart);
                 if (callback != null) {
                     callback.onDownloadError("下载视频或音频文件失败");
@@ -221,13 +221,13 @@ public class BilibiliTvApi {
             }
 
             boolean mergeResult = mergeVideoAndAudio(videoFile.getPath(), audioFile.getPath(), mergeFile.getPath());
-            
+
             if (mergeResult && callback != null) {
                 callback.onDownloadComplete(title + ".mp4", mergeFile.getAbsolutePath());
             } else if (!mergeResult && callback != null) {
                 callback.onDownloadError("合并视频和音频失败");
             }
-            
+
             return mergeResult;
         } catch (Throwable t) {
             Log.e(TAG, "download BilibiliTvPart=" + BilibiliTvPart, t);
@@ -350,5 +350,123 @@ public class BilibiliTvApi {
         File m4sAudioFile = toFile(fileName + "_audio.m4s", BILIBILI_FOLDER);
         File mp3File = toFile(fileName + ".mp3", BILIBILI_FOLDER);
         return convertM4sToMp3(m4sAudioFile.getAbsolutePath(), mp3File.getPath());
+    }
+
+    /**
+     * 下载B站视频分P到指定目录
+     *
+     * @param bTvPart     视频分P信息
+     * @param downloadDir 下载目录
+     * @param fileName    文件名
+     * @param callback    下载回调
+     * @return 下载结果
+     */
+    public boolean downloadBTvPart(BilibiliTvPart bTvPart, File downloadDir, String fileName, DownloadCallback callback) {
+        try {
+            String bvid = bTvPart.getBvid();
+            long cid = bTvPart.getCid();
+            Pair<String, String> urlPair = getVideoAndAudioUrl(bvid, cid);
+            if (urlPair == null) {
+                Log.w(TAG, "downloadBTvPart urlPair is null, BilibiliTvPart=" + bTvPart);
+                if (callback != null) {
+                    callback.onDownloadError("获取视频地址失败");
+                }
+                return false;
+            }
+
+            // 确保下载目录存在
+            if (downloadDir == null || !downloadDir.exists()) {
+                if (downloadDir != null && !downloadDir.mkdirs()) {
+                    Log.w(TAG, "Failed to create download directory: " + downloadDir);
+                    if (callback != null) {
+                        callback.onDownloadError("创建下载目录失败");
+                    }
+                    return false;
+                }
+            }
+
+            // 准备临时文件
+            final String title = bTvPart.getTitle().replace('/', ' ');
+            File videoFile = new File(downloadDir, title + "_video.m4s");
+            File audioFile = new File(downloadDir, title + "_audio.m4s");
+
+            // 创建视频和音频下载的回调
+            DownloadCallback videoCallback = callback == null ? null : new DownloadCallback() {
+                @Override
+                public void onDownloadStart(long totalBytes, String name) {
+                    callback.onDownloadStart(totalBytes, "视频: " + name);
+                }
+
+                @Override
+                public void onProgressUpdate(long bytesRead, long totalBytes, double speed) {
+                    callback.onProgressUpdate(bytesRead, totalBytes, speed);
+                }
+
+                @Override
+                public void onDownloadComplete(String name, String filePath) {
+                    callback.onDownloadComplete("视频: " + name, filePath);
+                }
+
+                @Override
+                public void onDownloadError(String errorMessage) {
+                    callback.onDownloadError("视频下载失败: " + errorMessage);
+                }
+            };
+
+            DownloadCallback audioCallback = callback == null ? null : new DownloadCallback() {
+                @Override
+                public void onDownloadStart(long totalBytes, String name) {
+                    callback.onDownloadStart(totalBytes, "音频: " + name);
+                }
+
+                @Override
+                public void onProgressUpdate(long bytesRead, long totalBytes, double speed) {
+                    callback.onProgressUpdate(bytesRead, totalBytes, speed);
+                }
+
+                @Override
+                public void onDownloadComplete(String name, String filePath) {
+                    callback.onDownloadComplete("音频: " + name, filePath);
+                }
+
+                @Override
+                public void onDownloadError(String errorMessage) {
+                    callback.onDownloadError("音频下载失败: " + errorMessage);
+                }
+            };
+
+            // 下载视频和音频
+            if (!downloadM4sFile(urlPair.getKey(), videoFile, videoCallback) ||
+                    !downloadM4sFile(urlPair.getValue(), audioFile, audioCallback)) {
+                Log.w(TAG, "downloadBTvPart m4s failed, BilibiliTvPart=" + bTvPart);
+                if (callback != null) {
+                    callback.onDownloadError("下载视频或音频文件失败");
+                }
+                return false;
+            }
+
+            final File mergeFile = new File(downloadDir, fileName);
+
+            // 通知开始合并
+            if (callback != null) {
+                callback.onDownloadStart(0, "正在合并视频和音频...");
+            }
+
+            boolean mergeResult = mergeVideoAndAudio(videoFile.getPath(), audioFile.getPath(), mergeFile.getPath());
+
+            if (mergeResult && callback != null) {
+                callback.onDownloadComplete(fileName, mergeFile.getAbsolutePath());
+            } else if (!mergeResult && callback != null) {
+                callback.onDownloadError("合并视频和音频失败");
+            }
+
+            return mergeResult;
+        } catch (Throwable t) {
+            Log.e(TAG, "downloadBTvPart BilibiliTvPart=" + bTvPart, t);
+            if (callback != null) {
+                callback.onDownloadError("下载过程发生异常: " + t.getMessage());
+            }
+            return false;
+        }
     }
 }

@@ -10,7 +10,6 @@ import static com.yz.bdown.utils.FileUtils.getFolder;
 import static com.yz.bdown.utils.FileUtils.toFile;
 
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -35,7 +34,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -53,26 +51,44 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * B站文件适配器
+ * 用于显示和管理已下载的B站视频文件列表
+ */
 public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePartAdapter.FileViewHolder> implements Filterable {
 
     private static final String TAG = "BilibiliFilePartAdapter";
     private static final String BILIBILI_FOLDER = "bilibiliDown";
-    private List<FileItem> fileList;
-    private List<FileItem> fileListFull; // 用于搜索过滤
-    private List<FileViewHolder> activeViewHolders = new ArrayList<>(); // 追踪所有活跃的 ViewHolder
-    private OnFileItemClickListener onFileItemClickListener;
-    private Map<String, Bitmap> thumbnailCache = new HashMap<>(); // 缩略图缓存
-    private ExecutorService executorService = Executors.newFixedThreadPool(3); // 线程池用于加载缩略图
-    private Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    private final List<FileItem> fileList;
+    private final List<FileItem> fileListFull; // 用于搜索过滤
+    private final List<FileViewHolder> activeViewHolders = new ArrayList<>(); // 追踪所有活跃的 ViewHolder
+    private OnFileItemClickListener onFileItemClickListener;
+    private final Map<String, Bitmap> thumbnailCache = new HashMap<>(); // 缩略图缓存
+    private final ExecutorService executorService = Executors.newFixedThreadPool(3); // 线程池用于加载缩略图
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    /**
+     * 文件项点击监听器接口
+     */
     public interface OnFileItemClickListener {
         void onFileItemClick(FileItem fileItem);
     }
 
+    /**
+     * 设置文件项点击监听器
+     *
+     * @param listener 文件项点击监听回调
+     */
     public void setOnFileItemClickListener(OnFileItemClickListener listener) {
         this.onFileItemClickListener = listener;
     }
 
+    /**
+     * 构造函数
+     *
+     * @param fileList 文件列表数据
+     */
     public BilibiliFilePartAdapter(List<FileItem> fileList) {
         this.fileList = fileList;
         this.fileListFull = new ArrayList<>(fileList);
@@ -103,12 +119,8 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         // 加载视频缩略图
         loadVideoThumbnail(fileItem, holder.fileThumbnail);
 
-        // 设置分享和音乐按钮点击事件
-        holder.shareButton.setOnClickListener(v -> share(fileItem, v));
-        holder.musicButton.setOnClickListener(v -> transformMp3(fileItem, v));
-
-        // 设置文本提取按钮点击事件
-        holder.textExtractButton.setOnClickListener(v -> showTextExtractionDialog(fileItem, v));
+        // 设置按钮点击事件
+        setupButtonListeners(holder, fileItem);
 
         // 设置整个卡片的点击事件
         holder.itemView.setOnClickListener(v -> {
@@ -119,7 +131,25 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
     }
 
     /**
+     * 设置按钮的点击监听器
+     *
+     * @param holder   ViewHolder对象
+     * @param fileItem 文件项数据
+     */
+    private void setupButtonListeners(FileViewHolder holder, FileItem fileItem) {
+        // 设置分享和音乐按钮点击事件
+        holder.shareButton.setOnClickListener(v -> share(fileItem, v));
+        holder.musicButton.setOnClickListener(v -> transformMp3(fileItem, v));
+
+        // 设置文本提取按钮点击事件
+        holder.textExtractButton.setOnClickListener(v -> showTextExtractionDialog(fileItem, v));
+    }
+
+    /**
      * 加载视频缩略图
+     *
+     * @param fileItem  文件项数据
+     * @param imageView 图片视图
      */
     private void loadVideoThumbnail(FileItem fileItem, ImageView imageView) {
         // 先检查缓存中是否已有缩略图
@@ -144,9 +174,7 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
                     thumbnailCache.put(fileItem.getFileName(), bitmap);
 
                     // 在主线程更新 UI
-                    mainHandler.post(() -> {
-                        imageView.setImageBitmap(bitmap);
-                    });
+                    mainHandler.post(() -> imageView.setImageBitmap(bitmap));
                 }
             } catch (Exception e) {
                 Log.e(TAG, "无法加载视频缩略图: " + fileItem.getFileName(), e);
@@ -154,9 +182,15 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         });
     }
 
+    /**
+     * 分享文件
+     *
+     * @param fileItem 要分享的文件项
+     * @param view     视图
+     */
     private void share(FileItem fileItem, View view) {
         Context context = view.getContext();
-        Uri fileUri = getFileUri(context, getFolder("bilibiliDown"), fileItem.getFileName());
+        Uri fileUri = getFileUri(context, getFolder(BILIBILI_FOLDER), fileItem.getFileName());
         if (fileUri != null) {
             Intent shareIntent = new Intent(ACTION_SEND);
             shareIntent.setType(getMimeType(fileItem.getFileType()));
@@ -168,7 +202,12 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         }
     }
 
-    // 获取文件的 MIME 类型
+    /**
+     * 获取文件的 MIME 类型
+     *
+     * @param fileType 文件类型
+     * @return MIME类型字符串
+     */
     private String getMimeType(String fileType) {
         switch (fileType) {
             case "MP4":
@@ -180,11 +219,18 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         }
     }
 
+    /**
+     * 转换视频为MP3格式
+     *
+     * @param fileItem 文件项
+     * @param v        视图
+     */
     private void transformMp3(FileItem fileItem, View v) {
         String fileName = fileItem.getFileName();
         String fileNamePrefix = fileName.substring(0, fileName.lastIndexOf('.'));
         String m4sPath = toFile(fileNamePrefix + "_audio.m4s", BILIBILI_FOLDER).getAbsolutePath();
         String mp3Path = toFile(fileNamePrefix + ".mp3", BILIBILI_FOLDER).getAbsolutePath();
+
         CompletableFuture
                 .supplyAsync(() -> convertM4sToMp3(m4sPath, mp3Path))
                 .thenAccept(result -> {
@@ -209,15 +255,15 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         activeViewHolders.remove(holder);
     }
 
+    /**
+     * 释放播放器资源
+     */
     public void releasePlayer() {
-        for (FileViewHolder holder : activeViewHolders) {
-            // 清理任何播放器资源
-        }
         activeViewHolders.clear();
     }
 
     /**
-     * 释放资源
+     * 释放所有资源
      */
     public void destroy() {
         releasePlayer();
@@ -225,13 +271,17 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         thumbnailCache.clear();
     }
 
-    // 按名称排序
+    /**
+     * 按名称排序文件列表
+     */
     public void sortByName() {
         Collections.sort(fileList, (file1, file2) -> file1.getFileName().compareToIgnoreCase(file2.getFileName()));
         notifyDataSetChanged();
     }
 
-    // 按日期排序
+    /**
+     * 按日期排序文件列表
+     */
     public void sortByDate() {
         Collections.sort(fileList, (file1, file2) -> {
             if (file1.getLastModifiedTimestamp() == file2.getLastModifiedTimestamp()) {
@@ -242,7 +292,9 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         notifyDataSetChanged();
     }
 
-    // 按大小排序
+    /**
+     * 按大小排序文件列表
+     */
     public void sortBySize() {
         Collections.sort(fileList, (file1, file2) -> {
             if (file1.getFileSizeBytes() == file2.getFileSizeBytes()) {
@@ -258,7 +310,10 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         return fileFilter;
     }
 
-    private Filter fileFilter = new Filter() {
+    /**
+     * 文件搜索过滤器
+     */
+    private final Filter fileFilter = new Filter() {
         @Override
         protected FilterResults performFiltering(CharSequence constraint) {
             List<FileItem> filteredList = new ArrayList<>();
@@ -267,6 +322,7 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
                 filteredList.addAll(fileListFull);
             } else {
                 String filterPattern = constraint.toString().toLowerCase().trim();
+
                 for (FileItem item : fileListFull) {
                     if (item.getFileName().toLowerCase().contains(filterPattern)) {
                         filteredList.add(item);
@@ -282,13 +338,14 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         @Override
         protected void publishResults(CharSequence constraint, FilterResults results) {
             fileList.clear();
-            fileList.addAll((List) results.values);
+            //noinspection unchecked
+            fileList.addAll((List<FileItem>) results.values);
             notifyDataSetChanged();
         }
     };
 
     /**
-     * 显示文本提取对话框
+     * 显示文本提取选择对话框
      *
      * @param fileItem 文件项
      * @param view     视图
@@ -296,38 +353,29 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
     private void showTextExtractionDialog(FileItem fileItem, View view) {
         Context context = view.getContext();
 
-        // 使用自定义布局
-        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_text_extraction_choice, null);
-        Button btnExtractVideo = dialogView.findViewById(R.id.btn_extract_video);
-        Button btnExtractAudio = dialogView.findViewById(R.id.btn_extract_audio);
-
-        // 创建对话框 - 不设置标题，因为布局中已有标题
-        AlertDialog dialog = new AlertDialog.Builder(context, R.style.RoundedCornerDialog)
-                .setView(dialogView)
-                .create();
+        // 创建自定义对话框
+        Dialog dialog = new Dialog(context, R.style.RoundedCornerDialog);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_text_extraction_choice);
 
         // 设置按钮点击事件
-        btnExtractVideo.setOnClickListener(v -> {
+        Button btnVideo = dialog.findViewById(R.id.btn_extract_video);
+        Button btnAudio = dialog.findViewById(R.id.btn_extract_audio);
+        Button btnCancel = dialog.findViewById(R.id.btn_cancel);
+
+        btnVideo.setOnClickListener(v -> {
             dialog.dismiss();
             extractTextFromVideo(fileItem, view);
         });
 
-        btnExtractAudio.setOnClickListener(v -> {
+        btnAudio.setOnClickListener(v -> {
             dialog.dismiss();
             extractTextFromAudio(fileItem, view);
         });
 
-        // 显示对话框
-        dialog.show();
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
 
-        // 设置对话框宽度
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-            dialog.getWindow().setLayout(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-        }
+        dialog.show();
     }
 
     /**
@@ -338,40 +386,33 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
      */
     private void extractTextFromVideo(FileItem fileItem, View view) {
         Context context = view.getContext();
-        String videoPath = fileItem.getPreviewUri().replace("file://", "");
-
-        // 创建进度对话框
-        ProgressDialog progressDialog = new ProgressDialog(context, R.style.AppTheme_ProgressDialog);
-        progressDialog.setTitle("提取中");
-        progressDialog.setMessage("正在从视频中提取文本...");
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setMax(100);
-        progressDialog.setCancelable(false);
-
-        // 设置进度对话框的圆角背景
-        if (progressDialog.getWindow() != null) {
-            progressDialog.getWindow().setBackgroundDrawableResource(R.drawable.rounded_dialog_background);
-        }
-
+        Dialog progressDialog = createProgressDialog(context, "正在从视频提取文本...");
         progressDialog.show();
 
-        // 调用文本提取工具类
-        TextExtractorUtils.extractTextFromVideo(context, videoPath, new TextExtractorUtils.ExtractionProgressCallback() {
+        // 创建文本提取参数
+        String videoPath = fileItem.getPreviewUri().replace("file://", "");
+
+        // 执行文本提取（这里使用了模拟的回调，实际项目中应使用真实实现）
+        TextExtractorUtils.extractTextFromVideo(videoPath, new TextExtractorUtils.ExtractionCallback() {
             @Override
             public void onProgress(int progress) {
-                progressDialog.setProgress(progress);
+                // 更新进度
             }
 
             @Override
             public void onComplete(String text) {
-                progressDialog.dismiss();
-                showExtractedTextDialog(context, "视频文本提取结果", text);
+                mainHandler.post(() -> {
+                    progressDialog.dismiss();
+                    showExtractedTextDialog(context, "视频文本", text);
+                });
             }
 
             @Override
             public void onError(String errorMessage) {
-                progressDialog.dismiss();
-                Snackbar.make(view, errorMessage, LENGTH_LONG).show();
+                mainHandler.post(() -> {
+                    progressDialog.dismiss();
+                    Snackbar.make(view, "提取文本失败: " + errorMessage, LENGTH_LONG).show();
+                });
             }
         });
     }
@@ -384,115 +425,112 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
      */
     private void extractTextFromAudio(FileItem fileItem, View view) {
         Context context = view.getContext();
+        Dialog progressDialog = createProgressDialog(context, "正在从音频中提取文本...");
+        progressDialog.show();
+
+        // 找到对应的音频文件
         String fileName = fileItem.getFileName();
         String fileNamePrefix = fileName.substring(0, fileName.lastIndexOf('.'));
-        String audioPath = toFile(fileNamePrefix + "_audio.m4s", BILIBILI_FOLDER).getAbsolutePath();
+        String m4sPath = toFile(fileNamePrefix + "_audio.m4s", BILIBILI_FOLDER).getAbsolutePath();
+        File audioFile = new File(m4sPath);
 
-        // 检查音频文件是否存在
-        File audioFile = new File(audioPath);
         if (!audioFile.exists()) {
-            Snackbar.make(view, "音频文件不存在", LENGTH_LONG).show();
+            progressDialog.dismiss();
+            Snackbar.make(view, "未找到对应的音频文件", LENGTH_LONG).show();
             return;
         }
 
-        // 创建进度对话框
-        ProgressDialog progressDialog = new ProgressDialog(context, R.style.AppTheme_ProgressDialog);
-        progressDialog.setTitle("提取中");
-        progressDialog.setMessage("正在从音频中提取文本...");
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setMax(100);
-        progressDialog.setCancelable(false);
-
-        // 设置进度对话框的圆角背景
-        if (progressDialog.getWindow() != null) {
-            progressDialog.getWindow().setBackgroundDrawableResource(R.drawable.rounded_dialog_background);
-        }
-
-        progressDialog.show();
-
-        // 调用文本提取工具类
-        TextExtractorUtils.extractTextFromAudio(context, audioPath, new TextExtractorUtils.ExtractionProgressCallback() {
+        // 执行音频转文本的操作
+        TextExtractorUtils.extractTextFromAudio(m4sPath, new TextExtractorUtils.ExtractionCallback() {
             @Override
             public void onProgress(int progress) {
-                progressDialog.setProgress(progress);
+                // 更新进度
             }
 
             @Override
             public void onComplete(String text) {
-                progressDialog.dismiss();
-                showExtractedTextDialog(context, "音频文本提取结果", text);
+                mainHandler.post(() -> {
+                    progressDialog.dismiss();
+                    showExtractedTextDialog(context, "音频转文本", text);
+                });
             }
 
             @Override
             public void onError(String errorMessage) {
-                progressDialog.dismiss();
-                Snackbar.make(view, errorMessage, LENGTH_LONG).show();
+                mainHandler.post(() -> {
+                    progressDialog.dismiss();
+                    Snackbar.make(view, "提取文本失败: " + errorMessage, LENGTH_LONG).show();
+                });
             }
         });
     }
 
     /**
-     * 显示提取的文本结果对话框
+     * 创建进度对话框
+     *
+     * @param context 上下文
+     * @param message 显示消息
+     * @return 对话框实例
+     */
+    private Dialog createProgressDialog(Context context, String message) {
+        Dialog dialog = new Dialog(context, R.style.RoundedCornerDialog);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.extraction_progress_dialog);
+        dialog.setCancelable(false);
+
+        TextView messageTextView = dialog.findViewById(R.id.progress_message);
+        messageTextView.setText(message);
+
+        return dialog;
+    }
+
+    /**
+     * 显示提取的文本对话框
      *
      * @param context 上下文
      * @param title   标题
-     * @param text    提取的文本
+     * @param text    文本内容
      */
     private void showExtractedTextDialog(Context context, String title, String text) {
-        // 创建自定义对话框
-        final Dialog dialog = new Dialog(context);
+        Dialog dialog = new Dialog(context, R.style.RoundedCornerDialog);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.dialog_extracted_text);
+        dialog.setContentView(R.layout.extracted_text_dialog);
 
-        // 设置圆角背景和动画
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
-        }
-
-        // 获取视图引用
-        TextView textView = dialog.findViewById(R.id.extracted_text);
+        TextView titleTextView = dialog.findViewById(R.id.dialog_title);
+        TextView contentTextView = dialog.findViewById(R.id.dialog_content);
         Button copyButton = dialog.findViewById(R.id.copy_button);
-        Button shareButton = dialog.findViewById(R.id.share_text_button);
         Button closeButton = dialog.findViewById(R.id.close_button);
 
-        // 设置标题和文本内容
-        TextView titleView = new TextView(context);
-        titleView.setText(title);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        titleView.setTypeface(null, Typeface.BOLD);
-        titleView.setTextColor(context.getResources().getColor(R.color.text_primary));
-        titleView.setPadding(20, 20, 20, 20);
+        // 设置文本内容
+        titleTextView.setText(title);
 
-        // 设置文本
-        textView.setText(text);
+        if (text != null && !text.isEmpty()) {
+            contentTextView.setText(text);
+            contentTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            contentTextView.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        } else {
+            contentTextView.setText("未能提取到任何文本");
+            contentTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+            contentTextView.setTypeface(Typeface.create("sans-serif-medium", Typeface.ITALIC));
+        }
 
         // 设置复制按钮点击事件
         copyButton.setOnClickListener(v -> {
             ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("提取的文本", text);
+            ClipData clip = ClipData.newPlainText("Extracted Text", text);
             clipboard.setPrimaryClip(clip);
-            Snackbar.make(v, "文本已复制到剪贴板", LENGTH_SHORT).show();
-        });
-
-        // 设置分享按钮点击事件
-        shareButton.setOnClickListener(v -> {
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("text/plain");
-            shareIntent.putExtra(Intent.EXTRA_TEXT, text);
-            context.startActivity(Intent.createChooser(shareIntent, "分享文本"));
+            Snackbar.make(v, "已复制到剪贴板", LENGTH_SHORT).show();
         });
 
         // 设置关闭按钮点击事件
-        closeButton.setOnClickListener(v -> {
-            dialog.dismiss();
-        });
+        closeButton.setOnClickListener(v -> dialog.dismiss());
 
-        // 显示对话框
         dialog.show();
     }
 
+    /**
+     * 文件ViewHolder类
+     */
     public static class FileViewHolder extends RecyclerView.ViewHolder {
         TextView fileName, fileSize, fileDate;
         ImageButton shareButton, musicButton, textExtractButton;

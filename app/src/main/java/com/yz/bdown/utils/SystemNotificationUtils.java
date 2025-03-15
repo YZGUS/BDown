@@ -17,12 +17,12 @@ import com.yz.bdown.R;
 import java.io.File;
 import java.util.Random;
 
-public class SystemNotificationHelper {
+public class SystemNotificationUtils {
 
     private static final String CHANNEL_ID = "download_notification";
     private static final String CHANNEL_NAME = "下载通知";
     private static final String CHANNEL_DESC = "显示文件下载完成的通知";
-    
+
     /**
      * 创建通知渠道，在应用启动时调用
      */
@@ -35,13 +35,13 @@ public class SystemNotificationHelper {
                     NotificationManager.IMPORTANCE_DEFAULT
             );
             channel.setDescription(CHANNEL_DESC);
-            
+
             // 注册通知渠道
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
     }
-    
+
     /**
      * 发送下载完成通知
      */
@@ -50,7 +50,7 @@ public class SystemNotificationHelper {
         Intent openIntent = new Intent(Intent.ACTION_VIEW);
         String authority = context.getPackageName() + ".fileprovider";
         Uri fileUri = FileProvider.getUriForFile(context, authority, downloadedFile);
-        
+
         // 设置MIME类型
         String mimeType;
         String fileName = downloadedFile.getName().toLowerCase();
@@ -61,18 +61,18 @@ public class SystemNotificationHelper {
         } else {
             mimeType = "*/*";
         }
-        
+
         openIntent.setDataAndType(fileUri, mimeType);
         openIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        
+
         // 创建PendingIntent
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                context, 
-                0, 
-                openIntent, 
+                context,
+                0,
+                openIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
-        
+
         // 构建通知
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download_complete)
@@ -82,7 +82,7 @@ public class SystemNotificationHelper {
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true) // 点击后自动关闭
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message));
-        
+
         // 发送通知
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         try {

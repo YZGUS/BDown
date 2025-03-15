@@ -13,7 +13,7 @@ import androidx.fragment.app.FragmentManager;
 import com.google.android.material.snackbar.Snackbar;
 import com.yz.bdown.fragment.bilibili.BilibiliFolderFragment;
 import com.yz.bdown.fragment.bilibili.BilibiliFragment;
-import com.yz.bdown.utils.SystemNotificationHelper;
+import com.yz.bdown.utils.SystemNotificationUtils;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // 创建通知渠道
-        SystemNotificationHelper.createNotificationChannel(this);
+        SystemNotificationUtils.createNotificationChannel(this);
         
         // 设置 toolbar
         setSupportActionBar(findViewById(R.id.toolbar));

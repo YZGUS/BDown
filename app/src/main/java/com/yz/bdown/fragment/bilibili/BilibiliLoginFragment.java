@@ -4,16 +4,10 @@ import static android.content.Context.MODE_PRIVATE;
 import static android.os.Looper.getMainLooper;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-
 import static com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_SHORT;
 
-import android.graphics.Bitmap;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,17 +15,15 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import androidx.fragment.app.Fragment;
+
 import com.google.android.material.snackbar.Snackbar;
 import com.yz.bdown.R;
 import com.yz.bdown.api.BilibiliLoginApi;
 
-import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class BilibiliLoginFragment extends Fragment {
 

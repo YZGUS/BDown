@@ -5,25 +5,19 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 
 import com.yz.bdown.R;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 
 /**
  * 背景图片辅助类，用于加载和处理背景图片
  */
-public class BackgroundImageHelper {
+public class BackgroundImageUtils {
     private static final String TAG = "BackgroundImageHelper";
     
     /**

@@ -10,12 +10,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
-import com.bumptech.glide.request.RequestOptions;
 import com.yz.bdown.R;
 import com.yz.bdown.model.BilibiliTvPart;
-import com.yz.bdown.utils.GlideHelper;
+import com.yz.bdown.utils.GlideUtils;
 
 import java.util.List;
 
@@ -63,7 +60,7 @@ public class BilibiliTvPartAdapter extends RecyclerView.Adapter<BilibiliTvPartAd
         // 加载封面图片
         if (coverUrl != null && !coverUrl.isEmpty()) {
             // 使用GlideHelper加载B站图片
-            GlideHelper.loadBilibiliImage(context, coverUrl, holder.imgThumbnail);
+            GlideUtils.loadBilibiliImage(context, coverUrl, holder.imgThumbnail);
         } else {
             // 加载默认图片
             holder.imgThumbnail.setImageResource(R.drawable.ic_no_login);

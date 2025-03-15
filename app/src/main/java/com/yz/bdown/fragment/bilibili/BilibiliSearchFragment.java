@@ -1,7 +1,6 @@
 package com.yz.bdown.fragment.bilibili;
 
 import static android.content.Context.MODE_PRIVATE;
-import static android.view.View.VISIBLE;
 import static com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_SHORT;
 import static org.apache.commons.collections4.CollectionUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -32,9 +31,8 @@ import com.yz.bdown.api.BilibiliTvApi;
 import com.yz.bdown.model.BilibiliTvPart;
 import com.yz.bdown.utils.DownloadCallback;
 import com.yz.bdown.utils.FileUtils;
-import com.yz.bdown.utils.GlideHelper;
-import com.yz.bdown.utils.NotificationHelper;
-import com.yz.bdown.utils.SystemNotificationHelper;
+import com.yz.bdown.utils.GlideUtils;
+import com.yz.bdown.utils.NotificationUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -138,7 +136,7 @@ public class BilibiliSearchFragment extends Fragment {
                         if (coverUrl != null && !coverUrl.isEmpty()) {
                             coverImage.setVisibility(View.VISIBLE);
                             // 使用GlideHelper加载网络图片
-                            GlideHelper.loadBilibiliImage(getContext(), coverUrl, coverImage);
+                            GlideUtils.loadBilibiliImage(getContext(), coverUrl, coverImage);
                                 
                             // 设置列表项的封面URL
                             ((BilibiliTvPartAdapter)recyclerAdapter).setCoverUrl(coverUrl);
@@ -290,7 +288,7 @@ public class BilibiliSearchFragment extends Fragment {
                             progressDialog.dismiss();
                             
                             // 只使用一种通知方式，减少冗余
-                            NotificationHelper.showDownloadCompleteNotification(
+                            NotificationUtils.showDownloadCompleteNotification(
                                 getContext(),
                                 "下载完成",
                                 "文件 " + fileName + " 已保存至下载目录",

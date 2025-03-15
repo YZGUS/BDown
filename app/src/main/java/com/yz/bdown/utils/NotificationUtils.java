@@ -21,7 +21,7 @@ import java.io.File;
 /**
  * 通知助手类，用于显示下载完成后的通知提示
  */
-public class NotificationHelper {
+public class NotificationUtils {
 
     private static final String TAG = "NotificationHelper";
     private static AlertDialog currentDialog = null;

@@ -12,43 +12,43 @@
         android:layout_height="match_parent" />
 
     <LinearLayout
-        android:layout_width="200dp"
+        android:layout_width="250dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="#FFF"
-        android:orientation="vertical">
+        android:background="@drawable/semi_transparent_rounded_background"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:layout_marginEnd="-12dp"
+        android:elevation="6dp">
 
         <Button
             android:id="@+id/bilibili_login"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
+            android:layout_margin="8dp"
             android:gravity="center"
             android:text="登 录"
-            android:textColor="@color/black"
-            android:textSize="20dp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <Button
             android:id="@+id/bilibili_search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
+            android:layout_margin="8dp"
             android:gravity="center"
             android:text="搜 索"
-            android:textColor="@color/black"
-            android:textSize="20dp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <Button
             android:id="@+id/bilibili_tv_folder"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
+            android:layout_margin="8dp"
             android:gravity="center"
             android:text="视 频 列 表"
-            android:textColor="@color/black"
-            android:textSize="20dp"
+            android:textSize="18sp"
             android:textStyle="bold" />
     </LinearLayout>
 </androidx.drawerlayout.widget.DrawerLayout>

@@ -29,7 +29,10 @@ import com.yz.bdown.R;
 import com.yz.bdown.adapter.BilibiliTvPartAdapter;
 import com.yz.bdown.api.BilibiliTvApi;
 import com.yz.bdown.model.BilibiliTvPart;
+import com.yz.bdown.utils.FileUtils;
+import com.yz.bdown.utils.NotificationHelper;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -127,18 +130,33 @@ public class BilibiliSearchFragment extends Fragment {
         View view = getView();
         String title = bTvPart.getTitle();
         Snackbar.make(view, title + " 开始下载 !!!", LENGTH_SHORT).show();
+        
         CompletableFuture
                 .supplyAsync(() -> bilibiliTvApi.download(bTvPart))
                 .thenAccept(result -> {
                     if (result) {
-                        Snackbar.make(view, title + " 下载成功", LENGTH_SHORT).show();
+                        // 使用新的通知样式
+                        String fileName = title + ".mp4";
+                        File downloadedFile = new File(
+                            FileUtils.getFolder(bilibiliTvApi.getBilibiliFolder()), 
+                            fileName
+                        );
+                        
+                        // 在UI线程上显示通知
+                        handler.post(() -> {
+                            NotificationHelper.showDownloadCompleteNotification(
+                                getContext(),
+                                "下载完成",
+                                "文件 " + fileName + " 已保存至下载目录",
+                                downloadedFile
+                            );
+                        });
                     } else {
                         Snackbar.make(view, title + " 下载失败", LENGTH_SHORT).show();
                     }
                 })
                 .exceptionally(throwable -> {
                     Snackbar.make(view, "视频下载异常!!!", LENGTH_SHORT).show();
-                    Log.e(TAG, "视频下载异常", throwable);
                     return null;
                 });
     }

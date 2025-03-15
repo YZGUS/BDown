@@ -55,6 +55,11 @@ public class BilibiliTvApi {
 
     private static final String BILIBILI_FOLDER = "bilibiliDown";
 
+    // 获取下载文件夹名称的方法
+    public String getBilibiliFolder() {
+        return BILIBILI_FOLDER;
+    }
+
     private final SharedPreferences sharedPref;
 
     public BilibiliTvApi(SharedPreferences sharedPreferences) {

@@ -165,7 +165,7 @@ public class BilibiliTvApi {
 
                 @Override
                 public void onDownloadComplete(String fileName, String filePath) {
-                    callback.onDownloadComplete("视频: " + fileName, filePath);
+                    // 不触发完成回调，等待最终合并完成再通知
                 }
 
                 @Override
@@ -187,7 +187,7 @@ public class BilibiliTvApi {
 
                 @Override
                 public void onDownloadComplete(String fileName, String filePath) {
-                    callback.onDownloadComplete("音频: " + fileName, filePath);
+                    // 不触发完成回调，等待最终合并完成再通知
                 }
 
                 @Override
@@ -404,7 +404,7 @@ public class BilibiliTvApi {
 
                 @Override
                 public void onDownloadComplete(String name, String filePath) {
-                    callback.onDownloadComplete("视频: " + name, filePath);
+                    // 不触发完成回调，等待最终合并完成再通知
                 }
 
                 @Override
@@ -426,7 +426,7 @@ public class BilibiliTvApi {
 
                 @Override
                 public void onDownloadComplete(String name, String filePath) {
-                    callback.onDownloadComplete("音频: " + name, filePath);
+                    // 不触发完成回调，等待最终合并完成再通知
                 }
 
                 @Override

@@ -68,6 +68,9 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
     private final ExecutorService executorService = Executors.newFixedThreadPool(3); // 线程池用于加载缩略图
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    // 记录当前选中的排序方式
+    private int currentSortMethod = 0; // 0=未排序，1=按名称，2=按日期，3=按大小
+
     /**
      * 文件项点击监听器接口
      */
@@ -275,6 +278,7 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
      * 按名称排序文件列表
      */
     public void sortByName() {
+        currentSortMethod = 1;
         Collections.sort(fileList, (file1, file2) -> file1.getFileName().compareToIgnoreCase(file2.getFileName()));
         notifyDataSetChanged();
     }
@@ -283,6 +287,7 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
      * 按日期排序文件列表
      */
     public void sortByDate() {
+        currentSortMethod = 2;
         Collections.sort(fileList, (file1, file2) -> {
             if (file1.getLastModifiedTimestamp() == file2.getLastModifiedTimestamp()) {
                 return 0;
@@ -296,6 +301,7 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
      * 按大小排序文件列表
      */
     public void sortBySize() {
+        currentSortMethod = 3;
         Collections.sort(fileList, (file1, file2) -> {
             if (file1.getFileSizeBytes() == file2.getFileSizeBytes()) {
                 return 0;
@@ -340,9 +346,44 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
             fileList.clear();
             //noinspection unchecked
             fileList.addAll((List<FileItem>) results.values);
+
+            // 应用当前排序方式
+            applySortMethod();
+
             notifyDataSetChanged();
         }
     };
+
+    /**
+     * 应用当前选中的排序方式
+     */
+    private void applySortMethod() {
+        switch (currentSortMethod) {
+            case 1:
+                Collections.sort(fileList, (file1, file2) ->
+                        file1.getFileName().compareToIgnoreCase(file2.getFileName()));
+                break;
+            case 2:
+                Collections.sort(fileList, (file1, file2) -> {
+                    if (file1.getLastModifiedTimestamp() == file2.getLastModifiedTimestamp()) {
+                        return 0;
+                    }
+                    return file1.getLastModifiedTimestamp() > file2.getLastModifiedTimestamp() ? -1 : 1;
+                });
+                break;
+            case 3:
+                Collections.sort(fileList, (file1, file2) -> {
+                    if (file1.getFileSizeBytes() == file2.getFileSizeBytes()) {
+                        return 0;
+                    }
+                    return file1.getFileSizeBytes() > file2.getFileSizeBytes() ? -1 : 1;
+                });
+                break;
+            default:
+                // 不排序
+                break;
+        }
+    }
 
     /**
      * 显示文本提取选择对话框

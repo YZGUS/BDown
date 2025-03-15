@@ -106,10 +106,6 @@ public class M4sDownloadUtils {
                     }
                 }
 
-                if (callback != null) {
-                    callback.onDownloadComplete(outputFile.getName(), outputFile.getAbsolutePath());
-                }
-
                 return true;
             }
         } catch (Throwable t) {

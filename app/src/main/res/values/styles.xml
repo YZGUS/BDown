@@ -25,4 +25,12 @@
         <item name="android:windowEnterAnimation">@android:anim/fade_in</item>
         <item name="android:windowExitAnimation">@android:anim/fade_out</item>
     </style>
+    
+    <!-- 提取按钮样式 -->
+    <style name="ExtractionButtonStyle">
+        <item name="android:background">@drawable/extraction_button_background</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:elevation">2dp</item>
+    </style>
 </resources> 

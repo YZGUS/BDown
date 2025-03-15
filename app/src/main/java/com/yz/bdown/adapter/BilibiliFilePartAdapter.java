@@ -27,6 +27,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageButton;
@@ -58,7 +59,6 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
     private static final String BILIBILI_FOLDER = "bilibiliDown";
     private List<FileItem> fileList;
     private List<FileItem> fileListFull; // 用于搜索过滤
-    private int currentPlayingPosition = -1; // 当前正在播放的视频位置
     private List<FileViewHolder> activeViewHolders = new ArrayList<>(); // 追踪所有活跃的 ViewHolder
     private OnFileItemClickListener onFileItemClickListener;
     private Map<String, Bitmap> thumbnailCache = new HashMap<>(); // 缩略图缓存
@@ -90,26 +90,26 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
     @Override
     public void onBindViewHolder(@NonNull FileViewHolder holder, int position) {
         FileItem fileItem = fileList.get(position);
-        
+
         // 设置文件名和大小
         holder.fileName.setText(fileItem.getFileName());
         holder.fileSize.setText(fileItem.getFileSize());
-        
+
         // 设置文件日期（如果有）
         if (holder.fileDate != null && fileItem.getLastModified() != null) {
             holder.fileDate.setText(fileItem.getLastModified());
         }
-        
+
         // 加载视频缩略图
         loadVideoThumbnail(fileItem, holder.fileThumbnail);
-        
+
         // 设置分享和音乐按钮点击事件
         holder.shareButton.setOnClickListener(v -> share(fileItem, v));
         holder.musicButton.setOnClickListener(v -> transformMp3(fileItem, v));
-        
+
         // 设置文本提取按钮点击事件
         holder.textExtractButton.setOnClickListener(v -> showTextExtractionDialog(fileItem, v));
-        
+
         // 设置整个卡片的点击事件
         holder.itemView.setOnClickListener(v -> {
             if (onFileItemClickListener != null) {
@@ -127,22 +127,22 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
             imageView.setImageBitmap(thumbnailCache.get(fileItem.getFileName()));
             return;
         }
-        
+
         // 后台线程加载缩略图
         executorService.execute(() -> {
             try {
                 MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                 String videoPath = fileItem.getPreviewUri().replace("file://", "");
                 retriever.setDataSource(videoPath);
-                
+
                 // 获取视频的第一帧作为缩略图
                 Bitmap bitmap = retriever.getFrameAtTime(0);
                 retriever.release();
-                
+
                 if (bitmap != null) {
                     // 缓存缩略图
                     thumbnailCache.put(fileItem.getFileName(), bitmap);
-                    
+
                     // 在主线程更新 UI
                     mainHandler.post(() -> {
                         imageView.setImageBitmap(bitmap);
@@ -253,13 +253,6 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         notifyDataSetChanged();
     }
 
-    // 更新文件列表数据
-    public void updateData(List<FileItem> newFiles) {
-        this.fileList = new ArrayList<>(newFiles);
-        this.fileListFull = new ArrayList<>(newFiles);
-        notifyDataSetChanged();
-    }
-
     @Override
     public Filter getFilter() {
         return fileFilter;
@@ -296,37 +289,37 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
 
     /**
      * 显示文本提取对话框
-     * 
+     *
      * @param fileItem 文件项
-     * @param view 视图
+     * @param view     视图
      */
     private void showTextExtractionDialog(FileItem fileItem, View view) {
         Context context = view.getContext();
-        
+
         // 使用自定义布局
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_text_extraction_choice, null);
-        androidx.appcompat.widget.AppCompatButton btnExtractVideo = dialogView.findViewById(R.id.btn_extract_video);
-        androidx.appcompat.widget.AppCompatButton btnExtractAudio = dialogView.findViewById(R.id.btn_extract_audio);
-        
+        Button btnExtractVideo = dialogView.findViewById(R.id.btn_extract_video);
+        Button btnExtractAudio = dialogView.findViewById(R.id.btn_extract_audio);
+
         // 创建对话框 - 不设置标题，因为布局中已有标题
         AlertDialog dialog = new AlertDialog.Builder(context, R.style.RoundedCornerDialog)
                 .setView(dialogView)
                 .create();
-        
+
         // 设置按钮点击事件
         btnExtractVideo.setOnClickListener(v -> {
             dialog.dismiss();
             extractTextFromVideo(fileItem, view);
         });
-        
+
         btnExtractAudio.setOnClickListener(v -> {
             dialog.dismiss();
             extractTextFromAudio(fileItem, view);
         });
-        
+
         // 显示对话框
         dialog.show();
-        
+
         // 设置对话框宽度
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
@@ -336,17 +329,17 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
             );
         }
     }
-    
+
     /**
      * 从视频中提取文本
-     * 
+     *
      * @param fileItem 文件项
-     * @param view 视图
+     * @param view     视图
      */
     private void extractTextFromVideo(FileItem fileItem, View view) {
         Context context = view.getContext();
         String videoPath = fileItem.getPreviewUri().replace("file://", "");
-        
+
         // 创建进度对话框
         ProgressDialog progressDialog = new ProgressDialog(context, R.style.AppTheme_ProgressDialog);
         progressDialog.setTitle("提取中");
@@ -354,27 +347,27 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progressDialog.setMax(100);
         progressDialog.setCancelable(false);
-        
+
         // 设置进度对话框的圆角背景
         if (progressDialog.getWindow() != null) {
             progressDialog.getWindow().setBackgroundDrawableResource(R.drawable.rounded_dialog_background);
         }
-        
+
         progressDialog.show();
-        
+
         // 调用文本提取工具类
         TextExtractorUtils.extractTextFromVideo(context, videoPath, new TextExtractorUtils.ExtractionProgressCallback() {
             @Override
             public void onProgress(int progress) {
                 progressDialog.setProgress(progress);
             }
-            
+
             @Override
             public void onComplete(String text) {
                 progressDialog.dismiss();
                 showExtractedTextDialog(context, "视频文本提取结果", text);
             }
-            
+
             @Override
             public void onError(String errorMessage) {
                 progressDialog.dismiss();
@@ -382,26 +375,26 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
             }
         });
     }
-    
+
     /**
      * 从音频中提取文本
-     * 
+     *
      * @param fileItem 文件项
-     * @param view 视图
+     * @param view     视图
      */
     private void extractTextFromAudio(FileItem fileItem, View view) {
         Context context = view.getContext();
         String fileName = fileItem.getFileName();
         String fileNamePrefix = fileName.substring(0, fileName.lastIndexOf('.'));
         String audioPath = toFile(fileNamePrefix + "_audio.m4s", BILIBILI_FOLDER).getAbsolutePath();
-        
+
         // 检查音频文件是否存在
         File audioFile = new File(audioPath);
         if (!audioFile.exists()) {
             Snackbar.make(view, "音频文件不存在", LENGTH_LONG).show();
             return;
         }
-        
+
         // 创建进度对话框
         ProgressDialog progressDialog = new ProgressDialog(context, R.style.AppTheme_ProgressDialog);
         progressDialog.setTitle("提取中");
@@ -409,27 +402,27 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progressDialog.setMax(100);
         progressDialog.setCancelable(false);
-        
+
         // 设置进度对话框的圆角背景
         if (progressDialog.getWindow() != null) {
             progressDialog.getWindow().setBackgroundDrawableResource(R.drawable.rounded_dialog_background);
         }
-        
+
         progressDialog.show();
-        
+
         // 调用文本提取工具类
         TextExtractorUtils.extractTextFromAudio(context, audioPath, new TextExtractorUtils.ExtractionProgressCallback() {
             @Override
             public void onProgress(int progress) {
                 progressDialog.setProgress(progress);
             }
-            
+
             @Override
             public void onComplete(String text) {
                 progressDialog.dismiss();
                 showExtractedTextDialog(context, "音频文本提取结果", text);
             }
-            
+
             @Override
             public void onError(String errorMessage) {
                 progressDialog.dismiss();
@@ -437,33 +430,33 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
             }
         });
     }
-    
+
     /**
      * 显示提取的文本结果对话框
-     * 
+     *
      * @param context 上下文
-     * @param title 标题
-     * @param text 提取的文本
+     * @param title   标题
+     * @param text    提取的文本
      */
     private void showExtractedTextDialog(Context context, String title, String text) {
         // 创建自定义对话框
         final Dialog dialog = new Dialog(context);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_extracted_text);
-        
+
         // 设置圆角背景和动画
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
             dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
         }
-        
+
         // 获取视图引用
         TextView textView = dialog.findViewById(R.id.extracted_text);
-        androidx.appcompat.widget.AppCompatButton copyButton = dialog.findViewById(R.id.copy_button);
-        androidx.appcompat.widget.AppCompatButton shareButton = dialog.findViewById(R.id.share_text_button);
-        androidx.appcompat.widget.AppCompatButton closeButton = dialog.findViewById(R.id.close_button);
-        
+        Button copyButton = dialog.findViewById(R.id.copy_button);
+        Button shareButton = dialog.findViewById(R.id.share_text_button);
+        Button closeButton = dialog.findViewById(R.id.close_button);
+
         // 设置标题和文本内容
         TextView titleView = new TextView(context);
         titleView.setText(title);
@@ -471,10 +464,10 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
         titleView.setTypeface(null, Typeface.BOLD);
         titleView.setTextColor(context.getResources().getColor(R.color.text_primary));
         titleView.setPadding(20, 20, 20, 20);
-        
+
         // 设置文本
         textView.setText(text);
-        
+
         // 设置复制按钮点击事件
         copyButton.setOnClickListener(v -> {
             ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
@@ -482,7 +475,7 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
             clipboard.setPrimaryClip(clip);
             Snackbar.make(v, "文本已复制到剪贴板", LENGTH_SHORT).show();
         });
-        
+
         // 设置分享按钮点击事件
         shareButton.setOnClickListener(v -> {
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -490,12 +483,12 @@ public class BilibiliFilePartAdapter extends RecyclerView.Adapter<BilibiliFilePa
             shareIntent.putExtra(Intent.EXTRA_TEXT, text);
             context.startActivity(Intent.createChooser(shareIntent, "分享文本"));
         });
-        
+
         // 设置关闭按钮点击事件
         closeButton.setOnClickListener(v -> {
             dialog.dismiss();
         });
-        
+
         // 显示对话框
         dialog.show();
     }

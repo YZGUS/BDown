@@ -30,27 +30,23 @@
         android:gravity="center"
         android:orientation="horizontal">
 
-        <androidx.appcompat.widget.AppCompatButton
+        <Button
             android:id="@+id/btn_extract_video"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:background="@drawable/extraction_button_background"
-            android:elevation="2dp"
+            android:backgroundTint="@color/extraction_button_blue"
             android:text="按视频提取文案"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp" />
+            android:textColor="@android:color/white" />
 
-        <androidx.appcompat.widget.AppCompatButton
+        <Button
             android:id="@+id/btn_extract_audio"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:background="@drawable/extraction_button_background"
-            android:elevation="2dp"
+            android:backgroundTint="@color/extraction_button_blue"
             android:text="按音频提取文案"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp" />
+            android:textColor="@android:color/white" />
     </LinearLayout>
 </LinearLayout> 

@@ -31,4 +31,8 @@
     <color name="notification_background">#E6F0F7</color>
     <color name="notification_text">#2C3E50</color>
     <color name="notification_accent">#4A6DB3</color>
+    
+    <!-- 提取按钮颜色 -->
+    <color name="extraction_button_blue">#2196F3</color>
+    <color name="extraction_button_purple">#9C27B0</color>
 </resources>

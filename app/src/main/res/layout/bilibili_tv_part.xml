@@ -1,35 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:clickable="true"
     android:focusable="true"
-    android:orientation="horizontal"
-    android:padding="12dp"
-    android:layout_margin="8dp"
-    android:background="@drawable/rounded_corner_background"
-    android:elevation="2dp">
+    android:foreground="?android:attr/selectableItemBackground"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardUseCompatPadding="true">
 
-    <!-- 标题 -->
-    <TextView
-        android:id="@+id/bilibili_tv_title"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="4"
-        android:text="标题"
-        android:textColor="@color/text_primary"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:orientation="horizontal"
+        android:padding="12dp">
 
-    <!-- 持续时间 -->
-    <TextView
-        android:id="@+id/bilibili_tv_duration"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
-        android:layout_weight="1"
-        android:text="持续时间"
-        android:textColor="@color/text_secondary"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-</LinearLayout>
+        <!-- 缩略图容器 -->
+        <FrameLayout
+            android:layout_width="120dp"
+            android:layout_height="68dp"
+            android:layout_marginEnd="12dp">
+
+            <!-- 缩略图 -->
+            <ImageView
+                android:id="@+id/bilibili_tv_thumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/thumbnail_background"
+                android:contentDescription="视频缩略图"
+                android:scaleType="centerCrop" />
+
+            <!-- 时长标签 -->
+            <TextView
+                android:id="@+id/bilibili_tv_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="4dp"
+                android:background="@color/semi_transparent_black"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:text="00:00"
+                android:textColor="@color/white"
+                android:textSize="12sp" />
+        </FrameLayout>
+
+        <!-- 信息容器 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- 标题 -->
+            <TextView
+                android:id="@+id/bilibili_tv_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="视频标题"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <!-- 分P编号 -->
+            <TextView
+                android:id="@+id/bilibili_tv_part_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="P1"
+                android:textColor="@color/primary"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

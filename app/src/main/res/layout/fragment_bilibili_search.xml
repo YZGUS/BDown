@@ -1,53 +1,169 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".fragment.bilibili.BilibiliSearchFragment">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="16dp"
-        android:orientation="vertical">
+        android:fillViewport="true">
 
-        <!-- 带边框的输入框 -->
-        <EditText
-            android:id="@+id/bsf_input_bvid"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            style="@style/EditTextStyle"
-            android:hint="请输入内容" />
-
-        <!-- GET 按钮 -->
-        <Button
-            android:id="@+id/bsf_btn_search"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="GET" />
-
-        <!-- 封面 -->
-        <ImageView
-            android:id="@+id/bsf_image_cover"
-            android:layout_width="300dp"
-            android:layout_height="0dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:adjustViewBounds="true"
-            android:scaleType="fitCenter"
-            android:visibility="gone"
-            android:background="@drawable/rounded_corner_background"
-            android:padding="4dp" />
-
-        <!-- 视频列表 -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/bsf_tv_part_list"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginTop="16dp"
-            android:clipToPadding="false"
-            android:paddingBottom="8dp" />
-    </LinearLayout>
+            android:orientation="vertical"
+            android:padding="16dp">
 
-</FrameLayout>
+            <!-- 搜索区域 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardUseCompatPadding="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- 带边框的输入框 -->
+                    <EditText
+                        android:id="@+id/bsf_input_bvid"
+                        style="@style/EditTextStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="请输入BV号或视频链接" />
+
+                    <!-- GET 按钮 -->
+                    <Button
+                        android:id="@+id/bsf_btn_search"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="搜索视频" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 内容区域 -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/result_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardUseCompatPadding="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- 标题 -->
+                    <TextView
+                        android:id="@+id/video_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                    <!-- 封面 -->
+                    <ImageView
+                        android:id="@+id/bsf_image_cover"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:layout_marginTop="12dp"
+                        android:adjustViewBounds="true"
+                        android:background="@drawable/rounded_corner_background"
+                        android:padding="4dp"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+
+                    <!-- 分集标题 -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="视频分集"
+                        android:textColor="@color/primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        android:id="@+id/episodes_title" />
+
+                    <!-- 视频列表 -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/bsf_tv_part_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clipToPadding="false"
+                        android:nestedScrollingEnabled="false"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 加载中指示器 -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <!-- 视频播放对话框 -->
+    <FrameLayout
+        android:id="@+id/video_player_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/semi_transparent_black"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- 视频播放器 -->
+                <androidx.media3.ui.PlayerView
+                    android:id="@+id/video_player_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="240dp"
+                    app:resize_mode="fit"
+                    app:use_controller="true" />
+
+                <!-- 关闭按钮 -->
+                <Button
+                    android:id="@+id/close_player_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:text="关闭播放器"
+                    android:textColor="@android:color/white"
+                    android:backgroundTint="@color/primary" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </FrameLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

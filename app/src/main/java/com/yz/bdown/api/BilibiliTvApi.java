@@ -25,6 +25,7 @@ import com.yz.bdown.model.BilibiliBaseResp;
 import com.yz.bdown.model.BilibiliTvInfo;
 import com.yz.bdown.model.BilibiliTvPart;
 import com.yz.bdown.utils.AudioConverterUtils;
+import com.yz.bdown.utils.DownloadCallback;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -95,7 +96,13 @@ public class BilibiliTvApi {
             return null;
         }
 
+        // 获取封面图
         String cover = ((JSONObject) parts.get(0)).getString("first_frame");
+        // 获取标题（默认使用第一个分P的标题，如果是多P视频则会有多个标题）
+        JSONObject firstPart = (JSONObject) parts.get(0);
+        // 视频标题（如果有多P，使用第一个分P标题作为主标题）
+        String mainTitle = firstPart.getString("part");
+        
         List<BilibiliTvPart> BilibiliTvParts = new ArrayList<>(parts.size());
         for (Object part : parts) {
             JSONObject partJson = (JSONObject) part;
@@ -104,16 +111,33 @@ public class BilibiliTvApi {
             Long cid = partJson.getLong("cid");
             BilibiliTvParts.add(new BilibiliTvPart(bvid, cid, title, duration));
         }
-        return new BilibiliTvInfo(cover, BilibiliTvParts);
+        
+        // 如果只有一个分P，使用其标题作为视频标题
+        // 如果有多个分P，生成一个总标题
+        String videoTitle;
+        if (parts.size() > 1) {
+            videoTitle = mainTitle + " (共" + parts.size() + "个视频)";
+        } else {
+            videoTitle = mainTitle;
+        }
+        
+        return new BilibiliTvInfo(cover, videoTitle, BilibiliTvParts);
     }
 
     public boolean download(BilibiliTvPart BilibiliTvPart) {
+        return download(BilibiliTvPart, null);
+    }
+
+    public boolean download(BilibiliTvPart BilibiliTvPart, DownloadCallback callback) {
         try {
             String bvid = BilibiliTvPart.getBvid();
             long cid = BilibiliTvPart.getCid();
             Pair<String, String> urlPair = getVideoAndAudioUrl(bvid, cid);
             if (urlPair == null) {
                 Log.w(TAG, "download urlPair is null, BilibiliTvPart=" + BilibiliTvPart);
+                if (callback != null) {
+                    callback.onDownloadError("获取视频地址失败");
+                }
                 return false;
             }
 
@@ -122,22 +146,95 @@ public class BilibiliTvApi {
             File audioFile = toFile(title + "_audio.m4s", BILIBILI_FOLDER);
             if (videoFile == null || audioFile == null) {
                 Log.w(TAG, "videoFile or audioFile is null");
+                if (callback != null) {
+                    callback.onDownloadError("创建临时文件失败");
+                }
                 return false;
             }
 
-            if (!downloadM4sFile(urlPair.getKey(), videoFile) || !downloadM4sFile(urlPair.getValue(), audioFile)) {
+            // 创建视频和音频下载的回调
+            DownloadCallback videoCallback = callback == null ? null : new DownloadCallback() {
+                @Override
+                public void onDownloadStart(long totalBytes, String fileName) {
+                    callback.onDownloadStart(totalBytes, "视频: " + fileName);
+                }
+
+                @Override
+                public void onProgressUpdate(long bytesRead, long totalBytes, double speed) {
+                    callback.onProgressUpdate(bytesRead, totalBytes, speed);
+                }
+
+                @Override
+                public void onDownloadComplete(String fileName, String filePath) {
+                    callback.onDownloadComplete("视频: " + fileName, filePath);
+                }
+
+                @Override
+                public void onDownloadError(String errorMessage) {
+                    callback.onDownloadError("视频下载失败: " + errorMessage);
+                }
+            };
+
+            DownloadCallback audioCallback = callback == null ? null : new DownloadCallback() {
+                @Override
+                public void onDownloadStart(long totalBytes, String fileName) {
+                    callback.onDownloadStart(totalBytes, "音频: " + fileName);
+                }
+
+                @Override
+                public void onProgressUpdate(long bytesRead, long totalBytes, double speed) {
+                    callback.onProgressUpdate(bytesRead, totalBytes, speed);
+                }
+
+                @Override
+                public void onDownloadComplete(String fileName, String filePath) {
+                    callback.onDownloadComplete("音频: " + fileName, filePath);
+                }
+
+                @Override
+                public void onDownloadError(String errorMessage) {
+                    callback.onDownloadError("音频下载失败: " + errorMessage);
+                }
+            };
+
+            // 下载视频和音频
+            if (!downloadM4sFile(urlPair.getKey(), videoFile, videoCallback) || 
+                !downloadM4sFile(urlPair.getValue(), audioFile, audioCallback)) {
                 Log.w(TAG, "download m4s failed, BilibiliTvPart=" + BilibiliTvPart);
+                if (callback != null) {
+                    callback.onDownloadError("下载视频或音频文件失败");
+                }
                 return false;
             }
 
             final File mergeFile = toFile(title + ".mp4", BILIBILI_FOLDER);
             if (mergeFile == null) {
                 Log.w(TAG, "mergeFile is null");
+                if (callback != null) {
+                    callback.onDownloadError("创建合并文件失败");
+                }
                 return false;
             }
-            return mergeVideoAndAudio(videoFile.getPath(), audioFile.getPath(), mergeFile.getPath());
+
+            // 通知开始合并
+            if (callback != null) {
+                callback.onDownloadStart(0, "正在合并视频和音频...");
+            }
+
+            boolean mergeResult = mergeVideoAndAudio(videoFile.getPath(), audioFile.getPath(), mergeFile.getPath());
+            
+            if (mergeResult && callback != null) {
+                callback.onDownloadComplete(title + ".mp4", mergeFile.getAbsolutePath());
+            } else if (!mergeResult && callback != null) {
+                callback.onDownloadError("合并视频和音频失败");
+            }
+            
+            return mergeResult;
         } catch (Throwable t) {
             Log.e(TAG, "download BilibiliTvPart=" + BilibiliTvPart, t);
+            if (callback != null) {
+                callback.onDownloadError("下载过程发生异常: " + t.getMessage());
+            }
             return false;
         }
     }

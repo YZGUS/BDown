@@ -1,0 +1,28 @@
+# Built files
+*.apk
+*.aab
+*.ap_
+*.aar
+
+# Gradle files
+.gradle/
+build/
+gradle-app.setting
+
+# Local configuration files
+local.properties
+
+# IDE 文件
+.idea/
+*.iml
+.navigation/
+capture/
+
+# Keystore files
+*.jks
+*.keystore
+
+# 其他
+/captures/
+/reports/
+*.log

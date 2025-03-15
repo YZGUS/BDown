@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="12dp"
     android:layout_margin="8dp"
     android:background="@drawable/rounded_corner_background"
-    android:elevation="3dp">
+    android:elevation="3dp"
+    android:orientation="vertical"
+    android:padding="12dp">
 
     <!-- 文件名和文件大小在同一行 -->
     <LinearLayout
@@ -67,8 +67,8 @@
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:layout_marginTop="12dp"
+        android:background="@drawable/rounded_corner_background"
         android:visibility="gone"
         app:resize_mode="fit"
-        app:use_controller="true"
-        android:background="@drawable/rounded_corner_background" />
+        app:use_controller="true" />
 </LinearLayout>

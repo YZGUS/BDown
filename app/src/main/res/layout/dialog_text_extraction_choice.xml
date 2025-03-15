@@ -6,52 +6,51 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- 下载通知标题 -->
     <TextView
-        android:id="@+id/notification_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="下载完成"
-        android:textColor="@color/notification_text"
+        android:layout_marginBottom="16dp"
+        android:text="文本提取"
+        android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:textStyle="bold" />
 
-    <!-- 下载文件信息 -->
     <TextView
-        android:id="@+id/notification_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="文件已保存至下载目录"
+        android:layout_marginBottom="20dp"
+        android:text="请选择提取方式:"
         android:textColor="@color/text_secondary"
         android:textSize="16sp" />
 
-    <!-- 操作按钮组 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
         android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/notification_open"
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_extract_video"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:background="@drawable/rounded_button_background"
-            android:text="打开文件"
-            android:textColor="@color/white" />
+            android:background="@drawable/extraction_button_background"
+            android:elevation="2dp"
+            android:text="按视频提取文案"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
 
-        <Button
-            android:id="@+id/notification_dismiss"
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_extract_audio"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_height="48dp"
             android:layout_weight="1"
-            android:background="@drawable/notification_button_secondary"
-            android:text="关闭"
-            android:textColor="@color/text_primary" />
+            android:background="@drawable/extraction_button_background"
+            android:elevation="2dp"
+            android:text="按音频提取文案"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
     </LinearLayout>
-
 </LinearLayout> 

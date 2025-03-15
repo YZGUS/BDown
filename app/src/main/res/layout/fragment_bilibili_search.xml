@@ -92,6 +92,7 @@
 
                     <!-- 分集标题 -->
                     <TextView
+                        android:id="@+id/episodes_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
@@ -99,8 +100,7 @@
                         android:textColor="@color/primary"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:visibility="gone"
-                        android:id="@+id/episodes_title" />
+                        android:visibility="gone" />
 
                     <!-- 视频列表 -->
                     <androidx.recyclerview.widget.RecyclerView
@@ -160,9 +160,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_margin="8dp"
+                    android:backgroundTint="@color/primary"
                     android:text="关闭播放器"
-                    android:textColor="@android:color/white"
-                    android:backgroundTint="@color/primary" />
+                    android:textColor="@android:color/white" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
     </FrameLayout>

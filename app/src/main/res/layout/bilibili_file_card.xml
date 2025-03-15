@@ -16,22 +16,22 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="120dp">
-            
+
             <ImageView
                 android:id="@+id/file_thumbnail"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:background="@color/background_light" />
-                
+                android:background="@color/background_light"
+                android:scaleType="centerCrop" />
+
             <ImageView
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_gravity="center"
-                android:src="@android:drawable/ic_media_play"
-                android:alpha="0.7" />
+                android:alpha="0.7"
+                android:src="@android:drawable/ic_media_play" />
         </FrameLayout>
-        
+
         <!-- 文件信息区域 -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -44,18 +44,18 @@
                 android:id="@+id/file_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:ellipsize="end" />
+                android:textStyle="bold" />
 
             <!-- 文件大小和日期 - 放在一行 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp">
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
 
                 <!-- 文件大小 -->
                 <TextView
@@ -71,26 +71,27 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="14sp"
+                    android:ellipsize="end"
                     android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <!-- 操作按钮 - 水平排列 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:layout_marginTop="8dp"
-                android:gravity="end">
+                android:gravity="end"
+                android:orientation="horizontal">
 
                 <!-- 分享图标 -->
                 <ImageButton
                     android:id="@+id/share_button"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="分享视频"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_share"
                     android:tint="@color/primary" />
@@ -98,12 +99,25 @@
                 <!-- 音频图标 -->
                 <ImageButton
                     android:id="@+id/music_button"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="16dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="12dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="提取音频"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_music"
+                    android:tint="@color/primary" />
+
+                <!-- 文本提取图标 -->
+                <ImageButton
+                    android:id="@+id/text_extract_button"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="12dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="提取文本"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_text"
                     android:tint="@color/primary" />
             </LinearLayout>
         </LinearLayout>

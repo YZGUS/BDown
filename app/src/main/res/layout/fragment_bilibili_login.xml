@@ -9,10 +9,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="16dp"
-        android:orientation="vertical"
-        android:padding="16dp"
         android:background="@drawable/rounded_corner_background"
         android:elevation="2dp"
+        android:orientation="vertical"
+        android:padding="16dp"
         android:visibility="visible">
 
         <!-- 登录按钮 -->
@@ -20,18 +20,18 @@
             android:id="@+id/blf_btn_login"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="登 录"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
+            android:text="登 录"
             android:visibility="visible" />
 
         <Button
             android:id="@+id/blf_btn_scanned"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="确 定"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
+            android:text="确 定"
             android:visibility="gone" />
 
         <ImageView

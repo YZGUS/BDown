@@ -25,6 +25,7 @@ import com.yz.bdown.R;
 import com.yz.bdown.adapter.BilibiliFilePartAdapter;
 import com.yz.bdown.model.FileItem;
 import com.yz.bdown.utils.FileUtils;
+import com.yz.bdown.utils.TextExtractorUtils;
 
 import java.io.File;
 import java.text.DecimalFormat;
@@ -234,6 +235,9 @@ public class BilibiliFolderFragment extends Fragment {
         if (fileAdapter != null) {
             fileAdapter.destroy();
         }
+        
+        // 关闭文本提取工具资源
+        TextExtractorUtils.shutdown();
     }
 
     public void releasePlayer() {

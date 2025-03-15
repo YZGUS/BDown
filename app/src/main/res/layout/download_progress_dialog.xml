@@ -2,18 +2,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/rounded_dialog_background"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@drawable/rounded_dialog_background">
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/download_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="正在下载..."
+        android:textColor="@color/text_primary"
         android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary" />
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/download_filename"
@@ -71,7 +71,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:backgroundTint="@color/primary"
         android:text="取消下载"
-        android:textColor="@android:color/white"
-        android:backgroundTint="@color/primary" />
+        android:textColor="@android:color/white" />
 </LinearLayout> 

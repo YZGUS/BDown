@@ -13,6 +13,7 @@ import androidx.fragment.app.FragmentManager;
 import com.google.android.material.snackbar.Snackbar;
 import com.yz.bdown.fragment.bilibili.BilibiliFolderFragment;
 import com.yz.bdown.fragment.bilibili.BilibiliFragment;
+import com.yz.bdown.fragment.deepseek.DeepSeekFragment;
 import com.yz.bdown.utils.SystemNotificationUtils;
 
 /**
@@ -69,11 +70,23 @@ public class MainActivity extends AppCompatActivity {
         int itemId = item.getItemId();
         if (itemId == R.id.item_bilibili) {
             loadFragment(new BilibiliFragment());
+        } else if (itemId == R.id.item_deepseek) {
+            // 检查是否已经配置了 DeepSeek API 密钥
+            checkAndLoadDeepSeekFragment();
         } else {
             // 显示提示信息
             showNotImplementedMessage();
         }
         return true;
+    }
+
+    /**
+     * 检查 DeepSeek API 密钥配置，然后加载 DeepSeek Fragment
+     */
+    private void checkAndLoadDeepSeekFragment() {
+        // 无论是否有密钥，都加载 DeepSeekFragment
+        // 在 Fragment 内部会处理密钥配置
+        loadFragment(new DeepSeekFragment());
     }
 
     /**

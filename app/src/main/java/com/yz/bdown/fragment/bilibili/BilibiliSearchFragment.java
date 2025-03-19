@@ -28,8 +28,9 @@ import com.google.android.material.snackbar.Snackbar;
 import com.yz.bdown.R;
 import com.yz.bdown.adapter.BilibiliTvPartAdapter;
 import com.yz.bdown.api.BilibiliTvApi;
-import com.yz.bdown.model.BilibiliTvPart;
-import com.yz.bdown.utils.DownloadCallback;
+import com.yz.bdown.model.bilibili.BilibiliTvPart;
+import com.yz.bdown.callback.DownloadCallback;
+import com.yz.bdown.model.bilibili.BilibiliTvInfo;
 import com.yz.bdown.utils.FileUtils;
 import com.yz.bdown.utils.GlideUtils;
 import com.yz.bdown.utils.NotificationUtils;
@@ -186,7 +187,7 @@ public class BilibiliSearchFragment extends Fragment {
      *
      * @param bilibiliTvInfo 视频信息
      */
-    private void updateUIWithVideoInfo(com.yz.bdown.model.BilibiliTvInfo bilibiliTvInfo) {
+    private void updateUIWithVideoInfo(BilibiliTvInfo bilibiliTvInfo) {
         // 隐藏加载进度条
         progressBar.setVisibility(View.GONE);
 

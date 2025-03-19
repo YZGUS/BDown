@@ -13,7 +13,7 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.yz.bdown.model.BilibiliBaseResp;
+import com.yz.bdown.model.bilibili.BilibiliBaseResp;
 
 import kotlin.Pair;
 import okhttp3.Headers;

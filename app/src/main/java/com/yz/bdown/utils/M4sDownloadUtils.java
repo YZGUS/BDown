@@ -5,6 +5,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import android.util.Log;
 
+import com.yz.bdown.callback.DownloadCallback;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;

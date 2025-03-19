@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.yz.bdown.R;
-import com.yz.bdown.model.BilibiliTvPart;
+import com.yz.bdown.model.bilibili.BilibiliTvPart;
 import com.yz.bdown.utils.GlideUtils;
 
 import java.util.List;

@@ -38,7 +38,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.yz.bdown.R;
-import com.yz.bdown.model.FileItem;
+import com.yz.bdown.model.bilibili.FileItem;
 import com.yz.bdown.utils.TextExtractorUtils;
 
 import java.io.File;

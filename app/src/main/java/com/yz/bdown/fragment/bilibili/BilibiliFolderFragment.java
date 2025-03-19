@@ -23,7 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.yz.bdown.R;
 import com.yz.bdown.adapter.BilibiliFilePartAdapter;
-import com.yz.bdown.model.FileItem;
+import com.yz.bdown.model.bilibili.FileItem;
 import com.yz.bdown.utils.FileUtils;
 import com.yz.bdown.utils.TextExtractorUtils;
 

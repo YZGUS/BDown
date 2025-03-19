@@ -21,10 +21,10 @@ import android.util.Log;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import com.yz.bdown.model.BilibiliBaseResp;
-import com.yz.bdown.model.BilibiliTvInfo;
-import com.yz.bdown.model.BilibiliTvPart;
-import com.yz.bdown.utils.DownloadCallback;
+import com.yz.bdown.model.bilibili.BilibiliBaseResp;
+import com.yz.bdown.model.bilibili.BilibiliTvInfo;
+import com.yz.bdown.model.bilibili.BilibiliTvPart;
+import com.yz.bdown.callback.DownloadCallback;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;

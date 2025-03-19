@@ -16,7 +16,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,7 +27,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.yz.bdown.R;
 import com.yz.bdown.adapter.ChatMessageAdapter;
-import com.yz.bdown.model.ChatMessage;
+import com.yz.bdown.model.chat.ChatMessage;
 
 import java.util.ArrayList;
 import java.util.List;

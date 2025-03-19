@@ -1,4 +1,4 @@
-package com.yz.bdown.model;
+package com.yz.bdown.model.bilibili;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

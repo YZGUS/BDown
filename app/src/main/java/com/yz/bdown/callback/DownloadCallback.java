@@ -1,4 +1,4 @@
-package com.yz.bdown.utils;
+package com.yz.bdown.callback;
 
 /**
  * 下载进度回调接口

@@ -73,7 +73,15 @@ public class ChatMessage {
         if (reasoning == null || reasoning.isEmpty()) {
             return "";
         }
-        return "> " + reasoning + "\n\n";
+        
+        // 将思考内容格式化为单个引用块
+        // 替换所有换行符为换行+>空格，确保多行内容在一个引用块内
+        String formatted = reasoning
+                .replaceAll("\n", "\n> ")
+                .trim();
+        
+        // 添加引用块标记并确保最后有两个换行符
+        return "> " + formatted + "\n\n";
     }
 
     public Date getTimestamp() {

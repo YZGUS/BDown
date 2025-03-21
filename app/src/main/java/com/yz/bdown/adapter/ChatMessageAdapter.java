@@ -29,6 +29,18 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     private Context context;
     private List<ChatMessage> messages;
     private Markwon markwon;
+    
+    // 双击监听接口
+    public interface OnItemDoubleClickListener {
+        void onItemDoubleClick(ChatMessage message);
+    }
+    
+    private OnItemDoubleClickListener doubleClickListener;
+    
+    // 设置双击监听
+    public void setOnItemDoubleClickListener(OnItemDoubleClickListener listener) {
+        this.doubleClickListener = listener;
+    }
 
     public ChatMessageAdapter(Context context, List<ChatMessage> messages, Markwon markwon) {
         this.context = context;
@@ -79,11 +91,42 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             // 用户消息使用普通文本显示
             holder.messageText.setText(message.getContent());
         }
+        
+        // 设置双击监听
+        if (doubleClickListener != null) {
+            holder.itemView.setOnClickListener(new DoubleClickListener() {
+                @Override
+                public void onDoubleClick(View v) {
+                    doubleClickListener.onItemDoubleClick(message);
+                }
+            });
+        }
     }
 
     @Override
     public int getItemCount() {
         return messages.size();
+    }
+    
+    /**
+     * 双击检测类
+     */
+    public abstract class DoubleClickListener implements View.OnClickListener {
+        private static final long DOUBLE_CLICK_TIME_DELTA = 300; // 双击时间间隔（毫秒）
+        private long lastClickTime = 0;
+
+        @Override
+        public void onClick(View v) {
+            long clickTime = System.currentTimeMillis();
+            if (clickTime - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
+                onDoubleClick(v);
+                lastClickTime = 0;
+            } else {
+                lastClickTime = clickTime;
+            }
+        }
+
+        public abstract void onDoubleClick(View v);
     }
 
     static class MessageViewHolder extends RecyclerView.ViewHolder {

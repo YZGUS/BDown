@@ -4,21 +4,24 @@ import static com.yz.bdown.contents.DeepSeekModelEnum.R1;
 import static com.yz.bdown.contents.DeepSeekModelEnum.V3;
 
 import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.Spinner;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -40,6 +43,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.noties.markwon.Markwon;
+import io.noties.markwon.core.CorePlugin;
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin;
 import io.noties.markwon.ext.tables.TablePlugin;
 import io.noties.markwon.ext.tasklist.TaskListPlugin;
@@ -60,15 +64,17 @@ public class DeepSeekFragment extends Fragment {
     private RecyclerView chatRecyclerView;
     private ProgressBar progressBar;
     private FloatingActionButton settingsButton;
-    private Spinner modelSelector;
+    private FloatingActionButton newChatButton;
+    private FloatingActionButton historyDrawingButton;
+    private RadioGroup modelSelector;
+    private RadioButton v3RadioButton;
+    private RadioButton r1RadioButton;
     private Handler mainHandler;
 
     // 当前API调用，用于取消请求
-    private okhttp3.Call currentCall;
     private AtomicBoolean isCancelled = new AtomicBoolean(false);
 
-    private final String[] MODEL_OPTIONS = {"deepseek-chat", "deepseek-reasoner"};
-    private String currentModel = MODEL_OPTIONS[0];
+    private String currentModel = R1.getModel();
 
     private List<ChatMessage> messageHistory = new ArrayList<>();
     private ChatMessageAdapter chatAdapter;
@@ -81,9 +87,6 @@ public class DeepSeekFragment extends Fragment {
     private int consecutiveFailures = 0;
     private static final int MAX_FAILURES = 3;
     private int currentAssistantMessageIndex = -1;
-
-    // 在 DeepSeekFragment 类中添加成员变量用于累积当前提问的思考内容
-    private StringBuilder currentReasoningContent = new StringBuilder();
 
     @Nullable
     @Override
@@ -102,6 +105,9 @@ public class DeepSeekFragment extends Fragment {
         // 设置事件监听
         setupListeners();
 
+        // 设置双击复制功能
+        setupCopyOnDoubleTap();
+
         return view;
     }
 
@@ -111,6 +117,7 @@ public class DeepSeekFragment extends Fragment {
     private void initMarkwon() {
         // 配置 Markwon 实例，使用多个插件以支持丰富的 Markdown 功能
         markwon = Markwon.builder(requireContext())
+                .usePlugin(CorePlugin.create())
                 .usePlugin(StrikethroughPlugin.create())
                 .usePlugin(TablePlugin.create(requireContext()))
                 .usePlugin(TaskListPlugin.create(requireContext()))
@@ -128,7 +135,11 @@ public class DeepSeekFragment extends Fragment {
         chatRecyclerView = view.findViewById(R.id.deepseek_chat_recycler_view);
         progressBar = view.findViewById(R.id.deepseek_progress);
         settingsButton = view.findViewById(R.id.deepseek_settings_button);
+        newChatButton = view.findViewById(R.id.new_chat_button);
+        historyDrawingButton = view.findViewById(R.id.history_drawing_button);
         modelSelector = view.findViewById(R.id.model_selector);
+        v3RadioButton = view.findViewById(R.id.model_v3);
+        r1RadioButton = view.findViewById(R.id.model_r1);
         mainHandler = new Handler(Looper.getMainLooper());
 
         // 设置RecyclerView
@@ -144,36 +155,48 @@ public class DeepSeekFragment extends Fragment {
      * 设置模型选择器
      */
     private void setupModelSelector() {
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                requireContext(),
-                android.R.layout.simple_spinner_item,
-                MODEL_OPTIONS
-        );
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        modelSelector.setAdapter(adapter);
-
         // 加载保存的模型选择
         String savedModel = getSelectedModel();
-        for (int i = 0; i < MODEL_OPTIONS.length; i++) {
-            if (MODEL_OPTIONS[i].equals(savedModel)) {
-                modelSelector.setSelection(i);
-                currentModel = savedModel;
-                break;
-            }
+
+        // 根据保存的模型设置选中状态
+        if (R1.getModel().equals(savedModel)) {
+            r1RadioButton.setChecked(true);
+            currentModel = R1.getModel();
+        } else {
+            v3RadioButton.setChecked(true);
+            currentModel = V3.getModel();
         }
 
-        modelSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                currentModel = MODEL_OPTIONS[position];
-                saveSelectedModel(currentModel);
+        // 设置RadioGroup监听器
+        modelSelector.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.model_v3) {
+                currentModel = V3.getModel();
+            } else if (checkedId == R.id.model_r1) {
+                currentModel = R1.getModel();
             }
+            saveSelectedModel(currentModel);
+        });
+    }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                // 什么也不做
+    /**
+     * 设置双击复制功能
+     */
+    private void setupCopyOnDoubleTap() {
+        chatAdapter.setOnItemDoubleClickListener(message -> {
+            if (message != null && !TextUtils.isEmpty(message.getContent())) {
+                copyToClipboard(message.getContent());
+                Toast.makeText(requireContext(), "文本已复制到剪贴板", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    /**
+     * 复制文本到剪贴板
+     */
+    private void copyToClipboard(String text) {
+        ClipboardManager clipboard = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("聊天消息", text);
+        clipboard.setPrimaryClip(clip);
     }
 
     /**
@@ -211,6 +234,26 @@ public class DeepSeekFragment extends Fragment {
         });
 
         settingsButton.setOnClickListener(v -> showApiKeyDialog());
+
+        // 设置新增对话按钮点击事件
+        newChatButton.setOnClickListener(v -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
+                    .setTitle("新增对话")
+                    .setMessage("确定要开始新的对话吗？当前对话历史将被清空。")
+                    .setPositiveButton("确定", (dialog, which) -> {
+                        // 清空对话历史
+                        messageHistory.clear();
+                        chatAdapter.notifyDataSetChanged();
+                        Toast.makeText(requireContext(), "已开始新对话", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("取消", null);
+            builder.show();
+        });
+
+        // 设置历史会话按钮点击事件
+        historyDrawingButton.setOnClickListener(v -> {
+            Toast.makeText(requireContext(), "历史会话功能将在后续版本中推出", Toast.LENGTH_SHORT).show();
+        });
     }
 
     /**
@@ -225,7 +268,6 @@ public class DeepSeekFragment extends Fragment {
         currentAssistantMessageIndex = messageHistory.size();
         ChatMessage assistantMessage = new ChatMessage("assistant", "");
         assistantMessage.setInProgress(true);
-        // 确保初始化reasoning为空
         assistantMessage.setReasoning("");
 
         messageHistory.add(assistantMessage);
@@ -286,11 +328,34 @@ public class DeepSeekFragment extends Fragment {
 
             // 追加新的思考内容
             message.appendReasoning(newReasoning);
-            message.setContent(message.getFormattedReasoning());
 
-            // 更新UI
-            mainHandler.post(() -> chatAdapter.notifyItemChanged(currentAssistantMessageIndex));
+            // 格式化思考内容并设置为当前内容
+            String formattedReasoning = formatReasoningContent(message.getReasoning());
+            message.setContent(formattedReasoning);
+
+            // 更新UI，不进行自动滚动
+            mainHandler.post(() -> {
+                chatAdapter.notifyItemChanged(currentAssistantMessageIndex);
+            });
         }
+    }
+
+    /**
+     * 格式化思考内容，确保在一个引用块内
+     */
+    private String formatReasoningContent(String reasoning) {
+        if (reasoning == null || reasoning.isEmpty()) {
+            return "";
+        }
+
+        // 将全部内容放在一个引用块中
+        // 替换所有换行符为换行+>空格，确保多行内容在一个引用块内
+        String formatted = reasoning
+                .replaceAll("\n", "\n> ")
+                .trim();
+
+        // 添加引用块标记并确保最后有两个换行符
+        return "> " + formatted + "\n\n";
     }
 
     /**
@@ -304,7 +369,10 @@ public class DeepSeekFragment extends Fragment {
             String currentContent = message.getContent();
             message.setContent(currentContent + newContent);
 
-            mainHandler.post(() -> chatAdapter.notifyItemChanged(currentAssistantMessageIndex));
+            // 更新UI，不进行自动滚动
+            mainHandler.post(() -> {
+                chatAdapter.notifyItemChanged(currentAssistantMessageIndex);
+            });
         }
     }
 
@@ -376,7 +444,16 @@ public class DeepSeekFragment extends Fragment {
             ChatMessage message = messageHistory.get(currentAssistantMessageIndex);
             message.setContent(content);
             message.setInProgress(false);
+
+            // 更新UI，不进行自动滚动
             chatAdapter.notifyItemChanged(currentAssistantMessageIndex);
+
+            // 添加日志记录
+            Log.d(TAG, "回答完成: " + message.toString() +
+                    " | 角色: " + message.getRole() +
+                    " | 内容长度: " + message.getContent().length() +
+                    " | 推理内容长度: " + message.getReasoning().length() +
+                    " | 时间戳: " + message.getTimestamp());
         }
 
         currentAssistantMessageIndex = -1;
@@ -392,12 +469,16 @@ public class DeepSeekFragment extends Fragment {
             sendButton.setBackgroundResource(R.drawable.cancel_button_background);
             promptInput.setEnabled(false);
             modelSelector.setEnabled(false);
+            newChatButton.setEnabled(false);
+            historyDrawingButton.setEnabled(false);
         } else {
             // 请求已完成或已取消
             sendButton.setText(R.string.send_button);
             sendButton.setBackgroundResource(R.drawable.send_button_background);
             promptInput.setEnabled(true);
             modelSelector.setEnabled(true);
+            newChatButton.setEnabled(true);
+            historyDrawingButton.setEnabled(true);
         }
     }
 
@@ -484,7 +565,7 @@ public class DeepSeekFragment extends Fragment {
      */
     private String getSelectedModel() {
         SharedPreferences prefs = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getString("selected_model", MODEL_OPTIONS[0]);
+        return prefs.getString("selected_model", DeepSeekModelEnum.V3.getModel());
     }
 
     /**

@@ -10,13 +10,17 @@ public class ChatMessage {
     private String id;          // 消息唯一标识
     private String role;        // 消息角色：user 或 assistant
     private String content;     // 消息内容
+    private String reasoning;   // 思考/推理内容
     private Date timestamp;     // 消息时间戳
     private String sessionId;   // 所属会话ID
+    private boolean inProgress; // 是否正在处理中
 
     public ChatMessage(String role, String content) {
         this.role = role;
         this.content = content;
+        this.reasoning = "";    // 初始化推理内容为空字符串
         this.timestamp = new Date();
+        this.inProgress = false;
     }
 
     public String getId() {
@@ -42,6 +46,35 @@ public class ChatMessage {
     public void setContent(String content) {
         this.content = content;
     }
+    
+    public String getReasoning() {
+        return reasoning;
+    }
+    
+    public void setReasoning(String reasoning) {
+        this.reasoning = reasoning;
+    }
+    
+    /**
+     * 追加推理内容
+     * @param newReasoning 要追加的推理内容
+     */
+    public void appendReasoning(String newReasoning) {
+        if (newReasoning != null && !newReasoning.isEmpty()) {
+            this.reasoning += newReasoning;
+        }
+    }
+    
+    /**
+     * 获取格式化后的推理内容，用于在UI中展示
+     * @return 格式化为Markdown块引用的推理内容
+     */
+    public String getFormattedReasoning() {
+        if (reasoning == null || reasoning.isEmpty()) {
+            return "";
+        }
+        return "> " + reasoning + "\n\n";
+    }
 
     public Date getTimestamp() {
         return timestamp;
@@ -57,5 +90,13 @@ public class ChatMessage {
 
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
+    }
+    
+    public boolean isInProgress() {
+        return inProgress;
+    }
+    
+    public void setInProgress(boolean inProgress) {
+        this.inProgress = inProgress;
     }
 } 

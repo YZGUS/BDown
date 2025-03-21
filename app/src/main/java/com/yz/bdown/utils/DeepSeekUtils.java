@@ -49,7 +49,6 @@ public class DeepSeekUtils {
 
     public static void sendChatRequestStream(String apiKey,
                                              DeepSeekModelEnum model,
-                                             String userPrompt,
                                              List<ChatMessage> messageHistory,
                                              DeepSeekStreamCallback streamCallback) {
         try {
@@ -57,7 +56,7 @@ public class DeepSeekUtils {
                     .url(API_URL)
                     .addHeader("Content-Type", "application/json")
                     .addHeader("Authorization", "Bearer " + apiKey)
-                    .post(create(buildReqBody(model, userPrompt, messageHistory), JSON))
+                    .post(create(buildReqBody(model, messageHistory), JSON))
                     .build();
             CLIENT.newCall(request).enqueue(new Callback() {
                 @Override
@@ -82,14 +81,13 @@ public class DeepSeekUtils {
         }
     }
 
-    private static String buildReqBody(DeepSeekModelEnum model, String userPrompt, List<ChatMessage> messageHistory) {
+    private static String buildReqBody(DeepSeekModelEnum model, List<ChatMessage> messageHistory) {
         JSONObject jsonBody = new JSONObject();
         jsonBody.put("model", model.getModel());
         jsonBody.put("stream", model.isStream());
 
         JSONArray messagesArray = new JSONArray();
         messageHistory.forEach(m -> messagesArray.add(toMessage(m.getRole(), m.getContent())));
-        messagesArray.add(toMessage("user", userPrompt));
         jsonBody.put("messages", messagesArray);
         return jsonBody.toString();
     }

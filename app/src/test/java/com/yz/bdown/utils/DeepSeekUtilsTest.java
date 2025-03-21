@@ -75,7 +75,6 @@ public class DeepSeekUtilsTest {
         DeepSeekUtils.sendChatRequestStream(
                 API_KEY,
                 DeepSeekModelEnum.V3, // 使用非流式模型
-                "请给我讲一个简短的故事",
                 messageHistory,
                 callback
         );
@@ -100,7 +99,6 @@ public class DeepSeekUtilsTest {
         DeepSeekUtils.sendChatRequestStream(
                 API_KEY,
                 DeepSeekModelEnum.R1, // 使用流式模型
-                "请你分析一下为什么天空是蓝色的，一步一步思考",
                 messageHistory,
                 callback
         );

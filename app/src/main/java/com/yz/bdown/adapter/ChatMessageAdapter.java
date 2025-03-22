@@ -29,14 +29,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     private Context context;
     private List<ChatMessage> messages;
     private Markwon markwon;
-    
+
     // 双击监听接口
     public interface OnItemDoubleClickListener {
         void onItemDoubleClick(ChatMessage message);
     }
-    
+
     private OnItemDoubleClickListener doubleClickListener;
-    
+
     // 设置双击监听
     public void setOnItemDoubleClickListener(OnItemDoubleClickListener listener) {
         this.doubleClickListener = listener;
@@ -75,23 +75,48 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             if (message.isInProgress()) {
                 // 如果消息正在处理中，显示进度条
                 holder.progressBar.setVisibility(View.VISIBLE);
-                if (message.getContent().isEmpty()) {
+                if (message.getContent().isEmpty() && message.getReasoning().isEmpty()) {
                     holder.messageText.setVisibility(View.GONE);
                 } else {
                     holder.messageText.setVisibility(View.VISIBLE);
-                    markwon.setMarkdown(holder.messageText, message.getContent());
+
+                    // 如果有推理内容，则将推理内容格式化为引用块并显示
+                    String displayContent = message.getContent();
+                    if (!message.getReasoning().isEmpty()) {
+                        String formattedReasoning = message.getFormattedReasoning();
+
+                        // 如果主内容不为空，先显示推理内容，然后显示主内容
+                        if (!displayContent.isEmpty()) {
+                            displayContent = formattedReasoning + displayContent;
+                        } else {
+                            displayContent = formattedReasoning;
+                        }
+                    }
+
+                    markwon.setMarkdown(holder.messageText, displayContent);
                 }
             } else {
                 // 消息已完成，隐藏进度条，显示 Markdown 内容
                 holder.progressBar.setVisibility(View.GONE);
                 holder.messageText.setVisibility(View.VISIBLE);
-                markwon.setMarkdown(holder.messageText, message.getContent());
+
+                // 组合推理内容和主内容
+                String displayContent = message.getContent();
+                if (!message.getReasoning().isEmpty()) {
+                    String formattedReasoning = message.getFormattedReasoning();
+                    // 只有在主内容不为空的情况下，才添加推理内容
+                    if (!displayContent.isEmpty()) {
+                        displayContent = formattedReasoning + displayContent;
+                    }
+                }
+
+                markwon.setMarkdown(holder.messageText, displayContent);
             }
         } else {
             // 用户消息使用普通文本显示
             holder.messageText.setText(message.getContent());
         }
-        
+
         // 设置双击监听
         if (doubleClickListener != null) {
             holder.itemView.setOnClickListener(new DoubleClickListener() {
@@ -107,7 +132,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     public int getItemCount() {
         return messages.size();
     }
-    
+
     /**
      * 双击检测类
      */

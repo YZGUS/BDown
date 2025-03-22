@@ -7,6 +7,8 @@ import java.util.Date;
  * 用于存储单条对话消息
  */
 public class ChatMessage {
+    public static final String ROLE_USER = "user";
+    public static final String ROLE_ASSISTANT = "assistant";
     private String id;          // 消息唯一标识
     private String role;        // 消息角色：user 或 assistant
     private String content;     // 消息内容
@@ -46,17 +48,18 @@ public class ChatMessage {
     public void setContent(String content) {
         this.content = content;
     }
-    
+
     public String getReasoning() {
         return reasoning;
     }
-    
+
     public void setReasoning(String reasoning) {
         this.reasoning = reasoning;
     }
-    
+
     /**
      * 追加推理内容
+     *
      * @param newReasoning 要追加的推理内容
      */
     public void appendReasoning(String newReasoning) {
@@ -64,22 +67,23 @@ public class ChatMessage {
             this.reasoning += newReasoning;
         }
     }
-    
+
     /**
      * 获取格式化后的推理内容，用于在UI中展示
+     *
      * @return 格式化为Markdown块引用的推理内容
      */
     public String getFormattedReasoning() {
         if (reasoning == null || reasoning.isEmpty()) {
             return "";
         }
-        
+
         // 将思考内容格式化为单个引用块
         // 替换所有换行符为换行+>空格，确保多行内容在一个引用块内
         String formatted = reasoning
                 .replaceAll("\n", "\n> ")
                 .trim();
-        
+
         // 添加引用块标记并确保最后有两个换行符
         return "> " + formatted + "\n\n";
     }
@@ -99,11 +103,11 @@ public class ChatMessage {
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
     }
-    
+
     public boolean isInProgress() {
         return inProgress;
     }
-    
+
     public void setInProgress(boolean inProgress) {
         this.inProgress = inProgress;
     }

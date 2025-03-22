@@ -51,12 +51,20 @@ public class DeepSeekUtils {
                                              DeepSeekModelEnum model,
                                              List<ChatMessage> messageHistory,
                                              DeepSeekStreamCallback streamCallback) {
+        sendChatRequestStream(apiKey, model, messageHistory, 1.0, streamCallback);
+    }
+
+    public static void sendChatRequestStream(String apiKey,
+                                             DeepSeekModelEnum model,
+                                             List<ChatMessage> messageHistory,
+                                             double temperature,
+                                             DeepSeekStreamCallback streamCallback) {
         try {
             Request request = new Request.Builder()
                     .url(API_URL)
                     .addHeader("Content-Type", "application/json")
                     .addHeader("Authorization", "Bearer " + apiKey)
-                    .post(create(buildReqBody(model, messageHistory), JSON))
+                    .post(create(buildReqBody(model, messageHistory, temperature), JSON))
                     .build();
             CLIENT.newCall(request).enqueue(new Callback() {
                 @Override
@@ -82,9 +90,14 @@ public class DeepSeekUtils {
     }
 
     private static String buildReqBody(DeepSeekModelEnum model, List<ChatMessage> messageHistory) {
+        return buildReqBody(model, messageHistory, 1.0);
+    }
+
+    private static String buildReqBody(DeepSeekModelEnum model, List<ChatMessage> messageHistory, double temperature) {
         JSONObject jsonBody = new JSONObject();
         jsonBody.put("model", model.getModel());
         jsonBody.put("stream", model.isStream());
+        jsonBody.put("temperature", temperature);
 
         JSONArray messagesArray = new JSONArray();
         messageHistory.forEach(m -> messagesArray.add(toMessage(m.getRole(), m.getContent())));

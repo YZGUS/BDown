@@ -2,6 +2,8 @@ package com.yz.bdown.fragment.deepseek;
 
 import static com.yz.bdown.contents.DeepSeekModelEnum.R1;
 import static com.yz.bdown.contents.DeepSeekModelEnum.V3;
+import static com.yz.bdown.model.chat.ChatMessage.ROLE_ASSISTANT;
+import static com.yz.bdown.model.chat.ChatMessage.ROLE_USER;
 
 import android.app.AlertDialog;
 import android.content.ClipData;
@@ -16,11 +18,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -36,10 +41,12 @@ import com.yz.bdown.adapter.ChatMessageAdapter;
 import com.yz.bdown.callback.DeepSeekStreamCallback;
 import com.yz.bdown.contents.DeepSeekModelEnum;
 import com.yz.bdown.model.chat.ChatMessage;
+import com.yz.bdown.model.chat.ChatScenarioEnum;
 import com.yz.bdown.utils.DeepSeekUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.noties.markwon.Markwon;
@@ -58,6 +65,7 @@ public class DeepSeekFragment extends Fragment {
     private static final String PREFS_NAME = "DeepSeekPrefs";
     private static final String KEY_API_KEY = "api_key";
     private static final String TAG = "DeepSeekFragment";
+    private static final String KEY_SCENARIO = "scenario";
 
     private EditText promptInput;
     private Button sendButton;
@@ -69,12 +77,14 @@ public class DeepSeekFragment extends Fragment {
     private RadioGroup modelSelector;
     private RadioButton v3RadioButton;
     private RadioButton r1RadioButton;
+    private Spinner scenarioSpinner;
     private Handler mainHandler;
 
     // 当前API调用，用于取消请求
     private AtomicBoolean isCancelled = new AtomicBoolean(false);
 
     private String currentModel = R1.getModel();
+    private ChatScenarioEnum currentScenario = ChatScenarioEnum.DATA_ANALYSIS;
 
     private List<ChatMessage> messageHistory = new ArrayList<>();
     private ChatMessageAdapter chatAdapter;
@@ -86,7 +96,7 @@ public class DeepSeekFragment extends Fragment {
     private boolean isRequestInProgress = false;
     private int consecutiveFailures = 0;
     private static final int MAX_FAILURES = 3;
-    private int currentAssistantMessageIndex = -1;
+    private int curAssistantMessageIndex = -1;
 
     @Nullable
     @Override
@@ -101,6 +111,9 @@ public class DeepSeekFragment extends Fragment {
 
         // 设置模型选择器
         setupModelSelector();
+
+        // 设置场景选择器
+        setupScenarioSelector();
 
         // 设置事件监听
         setupListeners();
@@ -140,6 +153,7 @@ public class DeepSeekFragment extends Fragment {
         modelSelector = view.findViewById(R.id.model_selector);
         v3RadioButton = view.findViewById(R.id.model_v3);
         r1RadioButton = view.findViewById(R.id.model_r1);
+        scenarioSpinner = view.findViewById(R.id.scenario_selector);
         mainHandler = new Handler(Looper.getMainLooper());
 
         // 设置RecyclerView
@@ -179,6 +193,47 @@ public class DeepSeekFragment extends Fragment {
     }
 
     /**
+     * 设置场景选择器
+     */
+    private void setupScenarioSelector() {
+        // 创建适配器
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                ChatScenarioEnum.getAllDisplayNames()
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        scenarioSpinner.setAdapter(adapter);
+
+        // 设置默认选择
+        String savedScenario = getSelectedScenario();
+        currentScenario = ChatScenarioEnum.fromDisplayName(savedScenario);
+
+        // 设置选择项
+        for (int i = 0; i < adapter.getCount(); i++) {
+            if (Objects.equals(adapter.getItem(i), currentScenario.getDisplayName())) {
+                scenarioSpinner.setSelection(i);
+                break;
+            }
+        }
+
+        // 设置选择监听器
+        scenarioSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selected = parent.getItemAtPosition(position).toString();
+                currentScenario = ChatScenarioEnum.fromDisplayName(selected);
+                saveSelectedScenario(selected);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // 不做任何处理
+            }
+        });
+    }
+
+    /**
      * 设置双击复制功能
      */
     private void setupCopyOnDoubleTap() {
@@ -208,9 +263,7 @@ public class DeepSeekFragment extends Fragment {
                 // 如果请求正在进行中，则中止请求
                 cancelRequest();
             } else {
-                // 否则，发送新请求
                 String prompt = promptInput.getText().toString().trim();
-
                 if (TextUtils.isEmpty(prompt)) {
                     showError("请输入提示内容");
                     return;
@@ -221,27 +274,16 @@ public class DeepSeekFragment extends Fragment {
                     showApiKeyDialog();
                     return;
                 }
-
-                // 添加用户消息到聊天记录
-                addMessage("user", prompt);
-
-                // 清空输入框
-                promptInput.setText("");
-
-                // 开始请求
-                startRequest(prompt);
+                startRequest();
             }
         });
 
         settingsButton.setOnClickListener(v -> showApiKeyDialog());
-
-        // 设置新增对话按钮点击事件
         newChatButton.setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
                     .setTitle("新增对话")
                     .setMessage("确定要开始新的对话吗？当前对话历史将被清空。")
                     .setPositiveButton("确定", (dialog, which) -> {
-                        // 清空对话历史
                         messageHistory.clear();
                         chatAdapter.notifyDataSetChanged();
                         Toast.makeText(requireContext(), "已开始新对话", Toast.LENGTH_SHORT).show();
@@ -249,8 +291,6 @@ public class DeepSeekFragment extends Fragment {
                     .setNegativeButton("取消", null);
             builder.show();
         });
-
-        // 设置历史会话按钮点击事件
         historyDrawingButton.setOnClickListener(v -> {
             Toast.makeText(requireContext(), "历史会话功能将在后续版本中推出", Toast.LENGTH_SHORT).show();
         });
@@ -259,120 +299,151 @@ public class DeepSeekFragment extends Fragment {
     /**
      * 开始请求
      */
-    private void startRequest(String userPrompt) {
-        isRequestInProgress = true;
-        isCancelled.set(false);
-        updateUIForRequestInProgress(true);
+    private void startRequest() {
+        String inputMessage = promptInput.getText().toString().trim();
+        if (TextUtils.isEmpty(inputMessage)) {
+            Toast.makeText(requireContext(), "请输入提示内容", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        promptInput.setText("");
 
-        // 添加一个空的助手消息，并记录索引，用于更新显示
-        currentAssistantMessageIndex = messageHistory.size();
-        ChatMessage assistantMessage = new ChatMessage("assistant", "");
+        // 添加消息到聊天记录
+        addMessagesToChat(inputMessage);
+
+        // 更新UI状态
+        setUiState(false);
+
+        // 发送API请求
+        DeepSeekModelEnum model = R1.getModel().equals(currentModel) ? R1 : V3;
+        DeepSeekUtils.sendChatRequestStream(
+                getApiKey(),
+                model,
+                getMessagesToSend(model),
+                currentScenario.getTemperature(),
+                createCallbackHandler()
+        );
+    }
+
+    /**
+     * 添加消息到聊天记录
+     */
+    private void addMessagesToChat(String userMessage) {
+        // 添加用户消息
+        messageHistory.add(new ChatMessage(ROLE_USER, userMessage));
+        chatAdapter.notifyItemInserted(messageHistory.size() - 1);
+        curAssistantMessageIndex = messageHistory.size(); // 索引从 0 开始
+
+        // 添加助手消息（等待接收内容）
+        ChatMessage assistantMessage = new ChatMessage(ROLE_ASSISTANT, "");
         assistantMessage.setInProgress(true);
-        assistantMessage.setReasoning("");
 
         messageHistory.add(assistantMessage);
         chatAdapter.notifyItemInserted(messageHistory.size() - 1);
         chatRecyclerView.smoothScrollToPosition(messageHistory.size() - 1);
+    }
 
-        // 确定使用哪个模型
-        DeepSeekModelEnum model = R1.getModel().equals(currentModel) ? R1 : V3;
+    /**
+     * 设置UI状态
+     */
+    private void setUiState(boolean enabled) {
+        promptInput.setEnabled(enabled);
+        sendButton.setEnabled(enabled);
+        if (!enabled) {
+            sendButton.setText(R.string.cancel_button);
+            sendButton.setBackgroundResource(R.drawable.cancel_button_background);
+        } else {
+            sendButton.setText(R.string.send_button);
+            sendButton.setBackgroundResource(R.drawable.send_button_background);
+        }
+    }
 
-        // 调用API
-        String apiKey = getApiKey();
+    /**
+     * 获取要发送的消息列表（已控制上下文长度）
+     */
+    private List<ChatMessage> getMessagesToSend(DeepSeekModelEnum model) {
+        // 获取截止到当前用户消息的所有消息(不包括当前助手消息)
+        List<ChatMessage> messages = new ArrayList<>(messageHistory.subList(0, messageHistory.size() - 1));
+        if (messages.size() <= 1) {
+            return new ArrayList<>(messages); // 如果只有一条消息，无需裁剪
+        }
 
-        // 使用DeepSeekUtils发送请求
-        DeepSeekUtils.sendChatRequestStream(apiKey, model,
-                messageHistory.subList(0, messageHistory.size() - 1), // 不包括刚添加的空消息
-                new DeepSeekStreamCallback() {
-                    @Override
-                    public void onMessage(String reasoningContent, String content) {
-                        if (isCancelled.get()) return;
+        int totalLength = 0;
+        List<ChatMessage> messagesToKeep = new ArrayList<>();
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            ChatMessage message = messages.get(i);
+            int messageLength = message.getContent().length();
+            if (totalLength + messageLength <= model.getMaxContextLength()) {
+                messagesToKeep.add(0, message);
+                totalLength += messageLength;
+            } else {
+                break;
+            }
+        }
 
-                        // 处理思考过程 (reasoningContent)
-                        if (reasoningContent != null && !reasoningContent.isEmpty()) {
-                            // 使用新方法更新思考内容
-                            updateAssistantReasoningContent(reasoningContent);
-                        }
+        if (messagesToKeep.size() < messages.size()) {
+            int removed = messages.size() - messagesToKeep.size();
+            Log.d(TAG, "裁剪历史消息: 移除了 " + removed + " 条较早的消息，以适应上下文长度限制");
+        }
+        return messagesToKeep;
+    }
 
-                        // 处理响应内容 (content)
-                        if (content != null) {
-                            // 更新界面显示的内容
-                            updateAssistantMessageContent(content);
-                        }
-                    }
+    /**
+     * 创建回调处理器
+     */
+    private DeepSeekStreamCallback createCallbackHandler() {
+        return new DeepSeekStreamCallback() {
+            @Override
+            public void onMessage(String reasoningContent, String messageContent) {
+                if (reasoningContent != null) {
+                    updateAssistantReasoningContent(reasoningContent);
+                }
+                if (messageContent != null) {
+                    updateAssistantMessageContent(messageContent);
+                }
+            }
 
-                    @Override
-                    public void onComplete(String fullContent, String fullReasoningContent) {
-                        if (isCancelled.get()) return;
+            @Override
+            public void onComplete(String fullMessageContent, String fullReasoningContent) {
+                handleRequestSuccess(fullMessageContent, fullReasoningContent);
+            }
 
-                        // 请求成功完成
-                        handleRequestSuccess(fullContent);
-                    }
-
-                    @Override
-                    public void onError(String errMsg) {
-                        if (isCancelled.get()) return;
-
-                        // 请求失败
-                        handleRequestFailure(errMsg);
-                    }
-                });
+            @Override
+            public void onError(String errorMsg) {
+                handleRequestError(errorMsg);
+            }
+        };
     }
 
     /**
      * 更新助手消息的思考内容
      */
     private void updateAssistantReasoningContent(String newReasoning) {
-        if (currentAssistantMessageIndex >= 0 && currentAssistantMessageIndex < messageHistory.size()) {
-            ChatMessage message = messageHistory.get(currentAssistantMessageIndex);
+        if (curAssistantMessageIndex >= 0 && curAssistantMessageIndex < messageHistory.size()) {
+            ChatMessage message = messageHistory.get(curAssistantMessageIndex);
 
-            // 追加新的思考内容
+            // 只更新思考内容，不影响主要内容
             message.appendReasoning(newReasoning);
 
-            // 格式化思考内容并设置为当前内容
-            String formattedReasoning = formatReasoningContent(message.getReasoning());
-            message.setContent(formattedReasoning);
-
-            // 更新UI，不进行自动滚动
+            // 更新UI
             mainHandler.post(() -> {
-                chatAdapter.notifyItemChanged(currentAssistantMessageIndex);
+                chatAdapter.notifyItemChanged(curAssistantMessageIndex);
             });
         }
-    }
-
-    /**
-     * 格式化思考内容，确保在一个引用块内
-     */
-    private String formatReasoningContent(String reasoning) {
-        if (reasoning == null || reasoning.isEmpty()) {
-            return "";
-        }
-
-        // 将全部内容放在一个引用块中
-        // 替换所有换行符为换行+>空格，确保多行内容在一个引用块内
-        String formatted = reasoning
-                .replaceAll("\n", "\n> ")
-                .trim();
-
-        // 添加引用块标记并确保最后有两个换行符
-        return "> " + formatted + "\n\n";
     }
 
     /**
      * 更新助手消息内容（流式响应时使用）
      */
     private void updateAssistantMessageContent(String newContent) {
-        if (currentAssistantMessageIndex >= 0 && currentAssistantMessageIndex < messageHistory.size()) {
-            ChatMessage message = messageHistory.get(currentAssistantMessageIndex);
+        if (curAssistantMessageIndex >= 0 && curAssistantMessageIndex < messageHistory.size()) {
+            ChatMessage message = messageHistory.get(curAssistantMessageIndex);
 
             // 追加内容
             String currentContent = message.getContent();
             message.setContent(currentContent + newContent);
 
             // 更新UI，不进行自动滚动
-            mainHandler.post(() -> {
-                chatAdapter.notifyItemChanged(currentAssistantMessageIndex);
-            });
+            mainHandler.post(() -> chatAdapter.notifyItemChanged(curAssistantMessageIndex));
         }
     }
 
@@ -388,98 +459,141 @@ public class DeepSeekFragment extends Fragment {
         updateUIForRequestInProgress(false);
 
         // 如果有当前助手消息，将其内容更新为 "已取消"
-        if (currentAssistantMessageIndex >= 0 && currentAssistantMessageIndex < messageHistory.size()) {
-            ChatMessage message = messageHistory.get(currentAssistantMessageIndex);
+        if (curAssistantMessageIndex >= 0 && curAssistantMessageIndex < messageHistory.size()) {
+            ChatMessage message = messageHistory.get(curAssistantMessageIndex);
             message.setContent("*请求已取消*");
             message.setInProgress(false);
-            chatAdapter.notifyItemChanged(currentAssistantMessageIndex);
+            chatAdapter.notifyItemChanged(curAssistantMessageIndex);
         }
 
-        currentAssistantMessageIndex = -1;
-    }
-
-    /**
-     * 请求失败处理
-     */
-    private void handleRequestFailure(String errorMessage) {
-        isRequestInProgress = false;
-        updateUIForRequestInProgress(false);
-
-        consecutiveFailures++;
-
-        // 更新当前消息内容为错误信息
-        if (currentAssistantMessageIndex >= 0 && currentAssistantMessageIndex < messageHistory.size()) {
-            ChatMessage message = messageHistory.get(currentAssistantMessageIndex);
-            message.setContent("**错误：** " + errorMessage);
-            message.setInProgress(false);
-            chatAdapter.notifyItemChanged(currentAssistantMessageIndex);
-        }
-
-        // 如果连续失败次数达到阈值，从上下文中移除本次问题
-        if (consecutiveFailures >= MAX_FAILURES) {
-            // 实际实现中，这里会从上下文中移除最近的用户问题
-            showError("连续请求失败，已从上下文中移除本次问题");
-            // 移除最后两条消息（用户问题和失败回答）
-            if (messageHistory.size() >= 2) {
-                messageHistory.remove(messageHistory.size() - 1);
-                messageHistory.remove(messageHistory.size() - 1);
-                chatAdapter.notifyDataSetChanged();
-            }
-            consecutiveFailures = 0;
-        }
-
-        currentAssistantMessageIndex = -1;
+        curAssistantMessageIndex = -1;
     }
 
     /**
      * 请求成功处理
      */
-    private void handleRequestSuccess(String content) {
-        isRequestInProgress = false;
-        updateUIForRequestInProgress(false);
+    private void handleRequestSuccess(String content, String reasoning) {
+        finishRequest();
         consecutiveFailures = 0;
 
         // 更新当前消息内容
-        if (currentAssistantMessageIndex >= 0 && currentAssistantMessageIndex < messageHistory.size()) {
-            ChatMessage message = messageHistory.get(currentAssistantMessageIndex);
+        updateAssistantFinalMessage(content, reasoning);
+
+        // 添加日志记录
+        logMessageCompletion(content, reasoning);
+    }
+
+    /**
+     * 更新助手最终消息
+     */
+    private void updateAssistantFinalMessage(String content, String reasoning) {
+        if (curAssistantMessageIndex >= 0 && curAssistantMessageIndex < messageHistory.size()) {
+            ChatMessage message = messageHistory.get(curAssistantMessageIndex);
             message.setContent(content);
+            message.setReasoning(reasoning);
             message.setInProgress(false);
 
-            // 更新UI，不进行自动滚动
-            chatAdapter.notifyItemChanged(currentAssistantMessageIndex);
-
-            // 添加日志记录
-            Log.d(TAG, "回答完成: " + message.toString() +
-                    " | 角色: " + message.getRole() +
-                    " | 内容长度: " + message.getContent().length() +
-                    " | 推理内容长度: " + message.getReasoning().length() +
-                    " | 时间戳: " + message.getTimestamp());
+            // 更新UI
+            chatAdapter.notifyItemChanged(curAssistantMessageIndex);
         }
 
-        currentAssistantMessageIndex = -1;
+        curAssistantMessageIndex = -1;
+    }
+
+    /**
+     * 结束请求状态
+     */
+    private void finishRequest() {
+        isRequestInProgress = false;
+        updateUIForRequestInProgress(false);
+    }
+
+    /**
+     * 记录消息完成日志
+     */
+    private void logMessageCompletion(String content, String reasoning) {
+        if (curAssistantMessageIndex >= 0 && curAssistantMessageIndex < messageHistory.size()) {
+            ChatMessage message = messageHistory.get(curAssistantMessageIndex);
+            Log.d(TAG, "回答完成: " + message.toString() +
+                    " | 角色: " + message.getRole() +
+                    " | 内容长度: " + content.length() +
+                    " | 推理内容长度: " + (reasoning != null ? reasoning.length() : 0) +
+                    " | 时间戳: " + message.getTimestamp() +
+                    " | 场景: " + currentScenario.getDisplayName() +
+                    " | 温度: " + currentScenario.getTemperature());
+        }
+    }
+
+    /**
+     * 请求失败处理
+     */
+    private void handleRequestError(String errorMessage) {
+        finishRequest();
+        incrementFailureCount();
+
+        // 更新当前消息内容为错误信息
+        updateAssistantErrorMessage(errorMessage);
+
+        // 处理连续失败情况
+        handleConsecutiveFailures();
+    }
+
+    /**
+     * 更新助手错误消息
+     */
+    private void updateAssistantErrorMessage(String errorMessage) {
+        if (curAssistantMessageIndex >= 0 && curAssistantMessageIndex < messageHistory.size()) {
+            ChatMessage message = messageHistory.get(curAssistantMessageIndex);
+            message.setContent("**错误：** " + errorMessage);
+            message.setInProgress(false);
+            chatAdapter.notifyItemChanged(curAssistantMessageIndex);
+        }
+    }
+
+    /**
+     * 增加失败计数
+     */
+    private void incrementFailureCount() {
+        consecutiveFailures++;
+    }
+
+    /**
+     * 处理连续失败
+     */
+    private void handleConsecutiveFailures() {
+        // 如果连续失败次数达到阈值，从上下文中移除本次问题
+        if (consecutiveFailures >= MAX_FAILURES) {
+            // 移除最后两条消息（用户问题和失败回答）
+            removeLastMessages();
+            showError("连续请求失败，已从上下文中移除本次问题");
+            consecutiveFailures = 0;
+        }
+
+        curAssistantMessageIndex = -1;
+    }
+
+    /**
+     * 移除最后的消息
+     */
+    private void removeLastMessages() {
+        if (messageHistory.size() >= 2) {
+            messageHistory.remove(messageHistory.size() - 1);
+            messageHistory.remove(messageHistory.size() - 1);
+            chatAdapter.notifyDataSetChanged();
+        }
     }
 
     /**
      * 更新 UI 以反映请求状态
      */
     private void updateUIForRequestInProgress(boolean inProgress) {
-        if (inProgress) {
-            // 请求进行中
-            sendButton.setText(R.string.cancel_button);
-            sendButton.setBackgroundResource(R.drawable.cancel_button_background);
-            promptInput.setEnabled(false);
-            modelSelector.setEnabled(false);
-            newChatButton.setEnabled(false);
-            historyDrawingButton.setEnabled(false);
-        } else {
-            // 请求已完成或已取消
-            sendButton.setText(R.string.send_button);
-            sendButton.setBackgroundResource(R.drawable.send_button_background);
-            promptInput.setEnabled(true);
-            modelSelector.setEnabled(true);
-            newChatButton.setEnabled(true);
-            historyDrawingButton.setEnabled(true);
-        }
+        setUiState(!inProgress);
+
+        // 其他UI组件的状态更新
+        modelSelector.setEnabled(!inProgress);
+        scenarioSpinner.setEnabled(!inProgress);
+        newChatButton.setEnabled(!inProgress);
+        historyDrawingButton.setEnabled(!inProgress);
     }
 
     /**
@@ -488,6 +602,22 @@ public class DeepSeekFragment extends Fragment {
     private String getApiKey() {
         SharedPreferences prefs = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         return prefs.getString(KEY_API_KEY, "");
+    }
+
+    /**
+     * 获取保存的场景选择
+     */
+    private String getSelectedScenario() {
+        SharedPreferences prefs = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getString(KEY_SCENARIO, ChatScenarioEnum.DATA_ANALYSIS.getDisplayName());
+    }
+
+    /**
+     * 保存场景选择
+     */
+    private void saveSelectedScenario(String scenarioName) {
+        SharedPreferences prefs = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putString(KEY_SCENARIO, scenarioName).apply();
     }
 
     /**
@@ -535,13 +665,11 @@ public class DeepSeekFragment extends Fragment {
     /**
      * 添加消息到聊天记录
      */
-    private void addMessage(String role, String content) {
-        ChatMessage message = new ChatMessage(role, content);
-        message.setInProgress(isRequestInProgress && "assistant".equals(role));
+    private int addMessageToChatList(ChatMessage message) {
         messageHistory.add(message);
         chatAdapter.notifyItemInserted(messageHistory.size() - 1);
         // 滚动到最新消息
-        chatRecyclerView.smoothScrollToPosition(messageHistory.size() - 1);
+        return messageHistory.size() - 1;
     }
 
     /**

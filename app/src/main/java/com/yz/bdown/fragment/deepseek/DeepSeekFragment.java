@@ -79,6 +79,7 @@ public class DeepSeekFragment extends Fragment {
     private RadioButton r1RadioButton;
     private Spinner scenarioSpinner;
     private Handler mainHandler;
+    private FloatingActionButton scrollToBottomButton;
 
     // 当前API调用，用于取消请求
     private AtomicBoolean isCancelled = new AtomicBoolean(false);
@@ -150,6 +151,7 @@ public class DeepSeekFragment extends Fragment {
         settingsButton = view.findViewById(R.id.deepseek_settings_button);
         newChatButton = view.findViewById(R.id.new_chat_button);
         historyDrawingButton = view.findViewById(R.id.history_drawing_button);
+        scrollToBottomButton = view.findViewById(R.id.scroll_to_bottom_button);
         modelSelector = view.findViewById(R.id.model_selector);
         v3RadioButton = view.findViewById(R.id.model_v3);
         r1RadioButton = view.findViewById(R.id.model_r1);
@@ -163,6 +165,38 @@ public class DeepSeekFragment extends Fragment {
 
         // 隐藏最初的进度条，放在回答旁边的进度条会通过 ChatMessageAdapter 显示
         progressBar.setVisibility(View.GONE);
+
+        // 初始隐藏滚动到底部按钮
+        scrollToBottomButton.setVisibility(View.GONE);
+
+        // 设置RecyclerView滚动监听
+        chatRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                if (chatAdapter.getItemCount() > 0) {
+                    // 当不在底部时显示滚动按钮
+                    LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                    if (layoutManager != null) {
+                        int lastVisiblePosition = layoutManager.findLastCompletelyVisibleItemPosition();
+                        int itemCount = chatAdapter.getItemCount();
+
+                        if (lastVisiblePosition < itemCount - 1) {
+                            // 如果不是在最底部，显示滚动按钮
+                            if (scrollToBottomButton.getVisibility() != View.VISIBLE) {
+                                scrollToBottomButton.setVisibility(View.VISIBLE);
+                            }
+                        } else {
+                            // 如果已经在底部，隐藏滚动按钮
+                            if (scrollToBottomButton.getVisibility() == View.VISIBLE) {
+                                scrollToBottomButton.setVisibility(View.GONE);
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -294,6 +328,9 @@ public class DeepSeekFragment extends Fragment {
         historyDrawingButton.setOnClickListener(v -> {
             Toast.makeText(requireContext(), "历史会话功能将在后续版本中推出", Toast.LENGTH_SHORT).show();
         });
+        
+        // 添加滚动到底部按钮点击事件
+        scrollToBottomButton.setOnClickListener(v -> scrollToBottom());
     }
 
     /**
@@ -339,7 +376,7 @@ public class DeepSeekFragment extends Fragment {
 
         messageHistory.add(assistantMessage);
         chatAdapter.notifyItemInserted(messageHistory.size() - 1);
-        chatRecyclerView.smoothScrollToPosition(messageHistory.size() - 1);
+        scrollToBottom();
     }
 
     /**
@@ -443,7 +480,19 @@ public class DeepSeekFragment extends Fragment {
             message.setContent(currentContent + newContent);
 
             // 更新UI，不进行自动滚动
-            mainHandler.post(() -> chatAdapter.notifyItemChanged(curAssistantMessageIndex));
+            mainHandler.post(() -> {
+                chatAdapter.notifyItemChanged(curAssistantMessageIndex);
+
+                // 检查是否应该显示滚动按钮
+                LinearLayoutManager layoutManager = (LinearLayoutManager) chatRecyclerView.getLayoutManager();
+                if (layoutManager != null) {
+                    int lastVisiblePosition = layoutManager.findLastCompletelyVisibleItemPosition();
+                    if (lastVisiblePosition < curAssistantMessageIndex) {
+                        // 如果最后一个消息不可见，显示滚动按钮
+                        scrollToBottomButton.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
         }
     }
 
@@ -709,5 +758,14 @@ public class DeepSeekFragment extends Fragment {
      */
     private void showError(String message) {
         Snackbar.make(requireView(), message, Snackbar.LENGTH_SHORT).show();
+    }
+
+    /**
+     * 滚动到聊天记录底部
+     */
+    private void scrollToBottom() {
+        if (chatAdapter.getItemCount() > 0) {
+            chatRecyclerView.smoothScrollToPosition(chatAdapter.getItemCount() - 1);
+        }
     }
 } 

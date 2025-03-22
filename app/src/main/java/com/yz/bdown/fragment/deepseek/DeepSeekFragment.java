@@ -2,10 +2,9 @@ package com.yz.bdown.fragment.deepseek;
 
 import static com.yz.bdown.contents.DeepSeekModelEnum.R1;
 import static com.yz.bdown.contents.DeepSeekModelEnum.V3;
-import static com.yz.bdown.model.chat.ChatMessage.ROLE_ASSISTANT;
-import static com.yz.bdown.model.chat.ChatMessage.ROLE_USER;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -18,6 +17,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -38,10 +38,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.yz.bdown.R;
 import com.yz.bdown.adapter.ChatMessageAdapter;
+import com.yz.bdown.adapter.SessionAdapter;
 import com.yz.bdown.callback.DeepSeekStreamCallback;
 import com.yz.bdown.contents.DeepSeekModelEnum;
 import com.yz.bdown.model.chat.ChatMessage;
 import com.yz.bdown.model.chat.ChatScenarioEnum;
+import com.yz.bdown.model.chat.ChatSession;
+import com.yz.bdown.model.chat.ChatSessionSummary;
+import com.yz.bdown.model.chat.db.ChatSessionManager;
 import com.yz.bdown.utils.DeepSeekUtils;
 
 import java.util.ArrayList;
@@ -99,10 +103,15 @@ public class DeepSeekFragment extends Fragment {
     private static final int MAX_FAILURES = 3;
     private int curAssistantMessageIndex = -1;
 
+    private ChatSessionManager sessionManager;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_deepseek, container, false);
+
+        // 初始化会话管理器
+        sessionManager = ChatSessionManager.getInstance(requireContext());
 
         // 初始化 Markwon
         initMarkwon();
@@ -121,6 +130,9 @@ public class DeepSeekFragment extends Fragment {
 
         // 设置双击复制功能
         setupCopyOnDoubleTap();
+
+        // 加载历史会话
+        loadChatHistory();
 
         return view;
     }
@@ -313,24 +325,209 @@ public class DeepSeekFragment extends Fragment {
         });
 
         settingsButton.setOnClickListener(v -> showApiKeyDialog());
+
         newChatButton.setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
                     .setTitle("新增对话")
-                    .setMessage("确定要开始新的对话吗？当前对话历史将被清空。")
+                    .setMessage("确定要开始新的对话吗？当前对话历史将被保存。")
                     .setPositiveButton("确定", (dialog, which) -> {
-                        messageHistory.clear();
-                        chatAdapter.notifyDataSetChanged();
+                        // 保存当前会话
+                        saveCurrentSession();
+
+                        // 创建新会话
+                        createNewSession();
+
                         Toast.makeText(requireContext(), "已开始新对话", Toast.LENGTH_SHORT).show();
                     })
                     .setNegativeButton("取消", null);
             builder.show();
         });
+
         historyDrawingButton.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "历史会话功能将在后续版本中推出", Toast.LENGTH_SHORT).show();
+            showHistorySessionsDialog();
         });
-        
+
         // 添加滚动到底部按钮点击事件
         scrollToBottomButton.setOnClickListener(v -> scrollToBottom());
+    }
+
+    /**
+     * 加载历史会话
+     */
+    private void loadChatHistory() {
+        // 初始化会话管理器，获取当前会话
+        ChatSession currentSession = sessionManager.initialize();
+
+        // 清空当前消息列表
+        messageHistory.clear();
+
+        // 加载会话中的消息
+        if (currentSession != null) {
+            List<ChatMessage> sessionMessages = currentSession.getMessages();
+
+            // 检查消息列表中是否有null项或内容为null的消息
+            if (sessionMessages != null) {
+                for (ChatMessage message : sessionMessages) {
+                    if (message != null) {
+                        // 确保消息内容和推理内容不为null
+                        if (message.getContent() == null) {
+                            message.setContent("");
+                        }
+                        if (message.getReasoning() == null) {
+                            message.setReasoning("");
+                        }
+                        messageHistory.add(message);
+                    }
+                }
+            }
+
+            // 设置当前模型
+            if (currentSession.getModelName() != null) {
+                currentModel = currentSession.getModelName();
+                if (DeepSeekModelEnum.V3.getModel().equals(currentModel)) {
+                    v3RadioButton.setChecked(true);
+                } else {
+                    r1RadioButton.setChecked(true);
+                }
+                saveSelectedModel(currentModel);
+            }
+
+            // 更新UI
+            chatAdapter.notifyDataSetChanged();
+
+            // 滚动到底部
+            if (!messageHistory.isEmpty()) {
+                scrollToBottom();
+            }
+        }
+    }
+
+    /**
+     * 保存当前会话
+     */
+    private void saveCurrentSession() {
+        if (sessionManager != null) {
+            // 获取当前会话
+            ChatSession currentSession = sessionManager.getCurrentSession();
+            if (currentSession != null) {
+                // 设置模型名称
+                currentSession.setModelName(currentModel);
+
+                // 更新消息列表
+                currentSession.setMessages(new ArrayList<>(messageHistory));
+
+                // 保存会话
+                sessionManager.saveCurrentSession();
+            }
+        }
+    }
+
+    /**
+     * 创建新会话
+     */
+    private void createNewSession() {
+        if (sessionManager != null) {
+            // 创建新会话并设置当前模型
+            sessionManager.createNewSession(currentModel);
+
+            // 清空消息历史
+            messageHistory.clear();
+            chatAdapter.notifyDataSetChanged();
+        }
+    }
+
+    /**
+     * 显示历史会话对话框
+     */
+    private void showHistorySessionsDialog() {
+        // 创建对话框
+        Dialog dialog = new Dialog(requireContext());
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_history_sessions);
+
+        // 设置对话框宽度为屏幕宽度的90%
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+
+        // 获取控件
+        RecyclerView sessionsRecyclerView = dialog.findViewById(R.id.sessions_recycler_view);
+        Button closeButton = dialog.findViewById(R.id.close_button);
+
+        // 设置RecyclerView
+        sessionsRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+
+        // 获取会话摘要列表
+        List<ChatSessionSummary> sessionSummaries = sessionManager.getAllSessionSummaries();
+
+        // 创建并设置适配器
+        SessionAdapter sessionAdapter = new SessionAdapter(requireContext(), sessionSummaries);
+        sessionsRecyclerView.setAdapter(sessionAdapter);
+
+        // 设置会话点击监听
+        sessionAdapter.setOnSessionClickListener(sessionId -> {
+            // 保存当前会话
+            saveCurrentSession();
+
+            // 切换到选择的会话
+            ChatSession selectedSession = sessionManager.switchSession(sessionId);
+            if (selectedSession != null) {
+                // 更新消息列表
+                messageHistory.clear();
+                messageHistory.addAll(selectedSession.getMessages());
+                chatAdapter.notifyDataSetChanged();
+
+                // 更新当前模型
+                if (selectedSession.getModelName() != null) {
+                    currentModel = selectedSession.getModelName();
+                    if (DeepSeekModelEnum.V3.getModel().equals(currentModel)) {
+                        v3RadioButton.setChecked(true);
+                    } else {
+                        r1RadioButton.setChecked(true);
+                    }
+                    saveSelectedModel(currentModel);
+                }
+
+                // 滚动到底部
+                scrollToBottom();
+
+                // 关闭对话框
+                dialog.dismiss();
+
+                Toast.makeText(requireContext(), "已切换到选择的会话", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // 设置删除会话点击监听
+        sessionAdapter.setOnDeleteSessionClickListener(sessionId -> {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("删除会话")
+                    .setMessage("确定要删除这个会话吗？此操作不可撤销。")
+                    .setPositiveButton("删除", (dialogInterface, i) -> {
+                        // 删除会话
+                        boolean deleted = sessionManager.deleteSession(sessionId);
+                        if (deleted) {
+                            // 如果删除的是当前会话，需要重新加载当前会话
+                            loadChatHistory();
+
+                            // 更新会话列表
+                            sessionAdapter.updateSessions(sessionManager.getAllSessionSummaries());
+
+                            Toast.makeText(requireContext(), "会话已删除", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(), "删除会话失败", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .setNegativeButton("取消", null)
+                    .show();
+        });
+
+        // 设置关闭按钮点击事件
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+
+        // 显示对话框
+        dialog.show();
     }
 
     /**
@@ -351,7 +548,7 @@ public class DeepSeekFragment extends Fragment {
         setUiState(false);
 
         // 发送API请求
-        DeepSeekModelEnum model = R1.getModel().equals(currentModel) ? R1 : V3;
+        DeepSeekModelEnum model = DeepSeekModelEnum.R1.getModel().equals(currentModel) ? DeepSeekModelEnum.R1 : DeepSeekModelEnum.V3;
         DeepSeekUtils.sendChatRequestStream(
                 getApiKey(),
                 model,
@@ -365,17 +562,31 @@ public class DeepSeekFragment extends Fragment {
      * 添加消息到聊天记录
      */
     private void addMessagesToChat(String userMessage) {
-        // 添加用户消息
-        messageHistory.add(new ChatMessage(ROLE_USER, userMessage));
+        // 创建用户消息
+        ChatMessage userChatMessage = new ChatMessage(ChatMessage.ROLE_USER, userMessage);
+
+        // 添加用户消息到内存中的消息列表
+        messageHistory.add(userChatMessage);
         chatAdapter.notifyItemInserted(messageHistory.size() - 1);
-        curAssistantMessageIndex = messageHistory.size(); // 索引从 0 开始
+
+        // 保存到数据库
+        if (sessionManager != null) {
+            sessionManager.addMessage(userChatMessage);
+        }
 
         // 添加助手消息（等待接收内容）
-        ChatMessage assistantMessage = new ChatMessage(ROLE_ASSISTANT, "");
+        ChatMessage assistantMessage = new ChatMessage(ChatMessage.ROLE_ASSISTANT, "");
         assistantMessage.setInProgress(true);
 
+        // 添加到内存中的消息列表
         messageHistory.add(assistantMessage);
         chatAdapter.notifyItemInserted(messageHistory.size() - 1);
+
+        // 设置当前助手消息索引（在添加助手消息后）
+        curAssistantMessageIndex = messageHistory.size() - 1;
+
+        // 注意：助手消息会在收到完整回复后再保存到数据库
+
         scrollToBottom();
     }
 
@@ -398,8 +609,24 @@ public class DeepSeekFragment extends Fragment {
      * 获取要发送的消息列表（已控制上下文长度）
      */
     private List<ChatMessage> getMessagesToSend(DeepSeekModelEnum model) {
+        // 获取当前会话ID
+        String sessionId = null;
+        if (sessionManager != null && sessionManager.getCurrentSession() != null) {
+            sessionId = sessionManager.getCurrentSession().getId();
+        }
+
         // 获取截止到当前用户消息的所有消息(不包括当前助手消息)
-        List<ChatMessage> messages = new ArrayList<>(messageHistory.subList(0, messageHistory.size() - 1));
+        List<ChatMessage> messages = new ArrayList<>();
+
+        // 遍历消息历史，只添加属于当前会话的消息
+        for (int i = 0; i < messageHistory.size() - 1; i++) {
+            ChatMessage message = messageHistory.get(i);
+            // 如果消息没有会话ID或会话ID与当前会话一致，则添加
+            if (message.getSessionId() == null || sessionId == null || message.getSessionId().equals(sessionId)) {
+                messages.add(message);
+            }
+        }
+
         if (messages.size() <= 1) {
             return new ArrayList<>(messages); // 如果只有一条消息，无需裁剪
         }
@@ -513,6 +740,11 @@ public class DeepSeekFragment extends Fragment {
             message.setContent("*请求已取消*");
             message.setInProgress(false);
             chatAdapter.notifyItemChanged(curAssistantMessageIndex);
+
+            // 保存已取消的助手消息到数据库
+            if (sessionManager != null) {
+                sessionManager.addMessage(message);
+            }
         }
 
         curAssistantMessageIndex = -1;
@@ -527,6 +759,14 @@ public class DeepSeekFragment extends Fragment {
 
         // 更新当前消息内容
         updateAssistantFinalMessage(content, reasoning);
+
+        // 保存助手消息到数据库
+        if (curAssistantMessageIndex >= 0 && curAssistantMessageIndex < messageHistory.size()) {
+            ChatMessage assistantMessage = messageHistory.get(curAssistantMessageIndex);
+            if (sessionManager != null) {
+                sessionManager.addMessage(assistantMessage);
+            }
+        }
 
         // 添加日志记录
         logMessageCompletion(content, reasoning);
@@ -545,8 +785,6 @@ public class DeepSeekFragment extends Fragment {
             // 更新UI
             chatAdapter.notifyItemChanged(curAssistantMessageIndex);
         }
-
-        curAssistantMessageIndex = -1;
     }
 
     /**
@@ -583,6 +821,14 @@ public class DeepSeekFragment extends Fragment {
         // 更新当前消息内容为错误信息
         updateAssistantErrorMessage(errorMessage);
 
+        // 保存错误消息到数据库
+        if (curAssistantMessageIndex >= 0 && curAssistantMessageIndex < messageHistory.size()) {
+            ChatMessage assistantMessage = messageHistory.get(curAssistantMessageIndex);
+            if (sessionManager != null) {
+                sessionManager.addMessage(assistantMessage);
+            }
+        }
+
         // 处理连续失败情况
         handleConsecutiveFailures();
     }
@@ -618,7 +864,7 @@ public class DeepSeekFragment extends Fragment {
             consecutiveFailures = 0;
         }
 
-        curAssistantMessageIndex = -1;
+        curAssistantMessageIndex -= 2;
     }
 
     /**
@@ -712,16 +958,6 @@ public class DeepSeekFragment extends Fragment {
     }
 
     /**
-     * 添加消息到聊天记录
-     */
-    private int addMessageToChatList(ChatMessage message) {
-        messageHistory.add(message);
-        chatAdapter.notifyItemInserted(messageHistory.size() - 1);
-        // 滚动到最新消息
-        return messageHistory.size() - 1;
-    }
-
-    /**
      * 保存API密钥
      */
     private void saveApiKey(String apiKey) {
@@ -767,5 +1003,12 @@ public class DeepSeekFragment extends Fragment {
         if (chatAdapter.getItemCount() > 0) {
             chatRecyclerView.smoothScrollToPosition(chatAdapter.getItemCount() - 1);
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // 保存当前会话
+        saveCurrentSession();
     }
 } 

@@ -75,14 +75,23 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             if (message.isInProgress()) {
                 // 如果消息正在处理中，显示进度条
                 holder.progressBar.setVisibility(View.VISIBLE);
-                if (message.getContent().isEmpty() && message.getReasoning().isEmpty()) {
+                
+                // 检查内容和推理内容是否为null
+                String content = message.getContent();
+                String reasoning = message.getReasoning();
+                
+                // 防止null导致的空指针异常
+                if (content == null) content = "";
+                if (reasoning == null) reasoning = "";
+                
+                if (content.isEmpty() && reasoning.isEmpty()) {
                     holder.messageText.setVisibility(View.GONE);
                 } else {
                     holder.messageText.setVisibility(View.VISIBLE);
 
                     // 如果有推理内容，则将推理内容格式化为引用块并显示
-                    String displayContent = message.getContent();
-                    if (!message.getReasoning().isEmpty()) {
+                    String displayContent = content;
+                    if (!reasoning.isEmpty()) {
                         String formattedReasoning = message.getFormattedReasoning();
 
                         // 如果主内容不为空，先显示推理内容，然后显示主内容
@@ -100,9 +109,16 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                 holder.progressBar.setVisibility(View.GONE);
                 holder.messageText.setVisibility(View.VISIBLE);
 
+                // 防止null导致的空指针异常
+                String content = message.getContent();
+                String reasoning = message.getReasoning();
+                
+                if (content == null) content = "";
+                if (reasoning == null) reasoning = "";
+
                 // 组合推理内容和主内容
-                String displayContent = message.getContent();
-                if (!message.getReasoning().isEmpty()) {
+                String displayContent = content;
+                if (!reasoning.isEmpty()) {
                     String formattedReasoning = message.getFormattedReasoning();
                     // 只有在主内容不为空的情况下，才添加推理内容
                     if (!displayContent.isEmpty()) {
@@ -114,7 +130,10 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             }
         } else {
             // 用户消息使用普通文本显示
-            holder.messageText.setText(message.getContent());
+            // 防止null导致的空指针异常
+            String content = message.getContent();
+            if (content == null) content = "";
+            holder.messageText.setText(content);
         }
 
         // 设置双击监听

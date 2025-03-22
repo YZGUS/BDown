@@ -16,6 +16,7 @@ public class ChatMessage {
     private Date timestamp;     // 消息时间戳
     private String sessionId;   // 所属会话ID
     private boolean inProgress; // 是否正在处理中
+    private String firstAnswer;    // 第一个回答预览
 
     public ChatMessage(String role, String content) {
         this.role = role;
@@ -42,7 +43,7 @@ public class ChatMessage {
     }
 
     public String getContent() {
-        return content;
+        return content != null ? content : "";
     }
 
     public void setContent(String content) {
@@ -50,7 +51,7 @@ public class ChatMessage {
     }
 
     public String getReasoning() {
-        return reasoning;
+        return reasoning != null ? reasoning : "";
     }
 
     public void setReasoning(String reasoning) {
@@ -110,5 +111,13 @@ public class ChatMessage {
 
     public void setInProgress(boolean inProgress) {
         this.inProgress = inProgress;
+    }
+
+    public String getFirstAnswer() {
+        return firstAnswer;
+    }
+
+    public void setFirstAnswer(String firstAnswer) {
+        this.firstAnswer = firstAnswer;
     }
 } 
